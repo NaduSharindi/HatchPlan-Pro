@@ -40,21 +40,17 @@ struct LandingView: View {
                     
                     // MARK: - Role Selection Buttons
                     VStack(spacing: 20) {
-                        RoleSelectionButton(
-                            title: "Hatchery Manager",
-                            iconName: "briefcase.fill"
-                        ) {
-                            // Action to navigate to Manager Login/Biometrics
-                            print("Manager selected")
+                        // Update your Role Selection Buttons in LandingView to look like this:
+
+                        NavigationLink(destination: PINAuthenticationView(roleTitle: "Hatchery Manager", subtitle: "Enter your manager PIN")) {
+                            RoleSelectionButton(title: "Hatchery Manager", iconName: "briefcase.fill") { }
                         }
-                        
-                        RoleSelectionButton(
-                            title: "Hatchery Supervisor",
-                            iconName: "person.2.fill"
-                        ) {
-                            // Action to navigate to Supervisor Login/Biometrics
-                            print("Supervisor selected")
+                        .buttonStyle(PlainButtonStyle())
+
+                        NavigationLink(destination: PINAuthenticationView(roleTitle: "Hatchery Supervisor", subtitle: "Enter your supervisor PIN")) {
+                            RoleSelectionButton(title: "Hatchery Supervisor", iconName: "person.2.fill") { }
                         }
+                        .buttonStyle(PlainButtonStyle())
                     }
                     
                     Spacer()

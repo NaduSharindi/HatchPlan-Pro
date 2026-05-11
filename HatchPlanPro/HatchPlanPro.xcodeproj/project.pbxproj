@@ -13,7 +13,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		7E54AB3D2FB1B308006AE96A /* HatchPlanPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; name = HatchPlanPro.app; path = "/Users/COBSCCOMP242P-063/Documents/HatchPlan/HatchPlanPro/build/Debug-iphoneos/HatchPlanPro.app"; sourceTree = "<absolute>"; };
+		7EF1563E2FB1CA610060F9EA /* HatchPlanPro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HatchPlanPro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,6 +42,7 @@
 			isa = PBXGroup;
 			children = (
 				7E54AB3F2FB1B308006AE96A /* HatchPlanPro */,
+				7EF1563E2FB1CA610060F9EA /* HatchPlanPro.app */,
 			);
 			sourceTree = "<group>";
 		};
@@ -70,7 +71,7 @@
 				7E54AB662FB1B9E1006AE96A /* FirebaseMessaging */,
 			);
 			productName = HatchPlanPro;
-			productReference = 7E54AB3D2FB1B308006AE96A /* HatchPlanPro.app */;
+			productReference = 7EF1563E2FB1CA610060F9EA /* HatchPlanPro.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -259,6 +260,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to securely log you into your hatchery account";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -290,6 +292,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "We use Face ID to securely log you into your hatchery account";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
