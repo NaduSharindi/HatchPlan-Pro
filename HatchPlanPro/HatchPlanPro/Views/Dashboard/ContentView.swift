@@ -14,35 +14,47 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             TabView(selection: $session.selectedTabIndex) {
-                dashboardHome
-                    .tabItem {
-                        Label("Dashboard", systemImage: "house.fill")
-                    }
-                    .tag(0)
+                if session.currentRole == .supervisor {
+                    SupervisorHomeView()
+                        .tabItem { Label("Home", systemImage: "house.fill") }
+                        .tag(0)
 
-                batchesView
-                    .tabItem {
-                        Label("Batches", systemImage: "tray.full.fill")
-                    }
-                    .tag(1)
+                    SupervisorBatchesView()
+                        .tabItem { Label("Batches", systemImage: "tray.full.fill") }
+                        .tag(1)
 
-                tasksView
-                    .tabItem {
-                        Label("Tasks", systemImage: "checklist")
-                    }
-                    .tag(2)
+                    SupervisorNotificationsView()
+                        .tabItem { Label("Notifications", systemImage: "bell.fill") }
+                        .tag(2)
 
-                alertsView
-                    .tabItem {
-                        Label("Alerts", systemImage: "bell.fill")
-                    }
-                    .tag(3)
+                    SupervisorHistoryView()
+                        .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
+                        .tag(3)
 
-                profileView
-                    .tabItem {
-                        Label("Profile", systemImage: "person.crop.circle.fill")
-                    }
-                    .tag(4)
+                    SupervisorSettingsView()
+                        .tabItem { Label("Settings", systemImage: "gearshape.fill") }
+                        .tag(4)
+                } else {
+                    dashboardHome
+                        .tabItem { Label("Dashboard", systemImage: "house.fill") }
+                        .tag(0)
+
+                    batchesView
+                        .tabItem { Label("Batches", systemImage: "tray.full.fill") }
+                        .tag(1)
+
+                    tasksView
+                        .tabItem { Label("Tasks", systemImage: "checklist") }
+                        .tag(2)
+
+                    alertsView
+                        .tabItem { Label("Alerts", systemImage: "bell.fill") }
+                        .tag(3)
+
+                    profileView
+                        .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
+                        .tag(4)
+                }
             }
             .tint(session.currentRole.accentColor)
             .toolbarBackground(.visible, for: .tabBar)
