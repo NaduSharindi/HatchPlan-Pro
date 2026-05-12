@@ -8,7 +8,9 @@
 import SwiftUI
 
 struct BiometricSetupView: View {
-    let roleTitle: String
+    @EnvironmentObject private var session: AppSessionViewModel
+
+    let role: HatcheryRole
     
     var body: some View {
         VStack(spacing: 40) {
@@ -26,7 +28,7 @@ struct BiometricSetupView: View {
                     .fontWeight(.bold)
                     .foregroundColor(.figmaTextDark)
                 
-                Text("Use Face ID to quickly and securely access your \(roleTitle) dashboard without typing your PIN.")
+                Text("Use Face ID to quickly and securely access your \(role.rawValue) dashboard without typing your PIN.")
                     .font(.body)
                     .foregroundColor(.gray)
                     .multilineTextAlignment(.center)
@@ -38,8 +40,7 @@ struct BiometricSetupView: View {
             VStack(spacing: 16) {
                 // Enable Button
                 Button(action: {
-                    print("Face ID Enabled! Routing to Dashboard...")
-                    // TODO: Route to main Dashboard
+                    session.completeAuthentication(usingFaceID: true)
                 }) {
                     Text("Enable Face ID")
                         .font(.headline)
@@ -53,8 +54,7 @@ struct BiometricSetupView: View {
                 
                 // Skip Button
                 Button(action: {
-                    print("Skipped. Routing to Dashboard...")
-                    // TODO: Route to main Dashboard
+                    session.completeAuthentication(usingFaceID: false)
                 }) {
                     Text("Skip for now")
                         .font(.subheadline)

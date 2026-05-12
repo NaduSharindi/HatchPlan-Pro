@@ -20,20 +20,26 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct HatchPlanProApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     let persistenceController = PersistenceController.shared
+    @StateObject private var session = AppSessionViewModel()
     
     // Check local storage to see if onboarding is complete
     @AppStorage("hasSeenOnboarding") var hasSeenOnboarding: Bool = false
 
     var body: some Scene {
         WindowGroup {
-            // Routing Logic
-            if hasSeenOnboarding {
-                LandingView()
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            } else {
-                OnboardingView()
-                    .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            Group {
+                if hasSeenOnboarding {
+                    if session.isAuthenticated {
+                        ContentView()
+                    } else {
+                        LandingView()
+                    }
+                } else {
+                    OnboardingView()
+                }
             }
+            .environmentObject(session)
+            .environment(\.managedObjectContext, persistenceController.container.viewContext)
         }
     }
 }

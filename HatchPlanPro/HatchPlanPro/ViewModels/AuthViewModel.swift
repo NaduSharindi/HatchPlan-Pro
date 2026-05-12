@@ -54,7 +54,7 @@ class AuthViewModel: ObservableObject {
                 DispatchQueue.main.async {
                     if success {
                         print("Biometric Auth Successful! Navigating to Dashboard...")
-                        // TODO: Trigger navigation to the respective dashboard
+                        self.isAuthenticated = true
                     } else {
                         print("Biometric Auth Failed: \(authenticationError?.localizedDescription ?? "Unknown error")")
                     }

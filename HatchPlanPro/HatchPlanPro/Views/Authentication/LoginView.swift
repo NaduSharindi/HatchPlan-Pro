@@ -9,10 +9,13 @@ import SwiftUI
 
 struct LoginView: View {
     @Environment(\.presentationMode) var presentationMode
-    let roleTitle: String // Dynamic role (Manager or Supervisor)
+    @EnvironmentObject private var session: AppSessionViewModel
+
+    let role: HatcheryRole
     
     @State private var email: String = ""
     @State private var password: String = ""
+    @State private var navigateToPIN = false
     
     var body: some View {
         VStack(spacing: 30) {
@@ -37,7 +40,7 @@ struct LoginView: View {
                     .foregroundColor(.figmaTextDark)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
-                Text("Log in to your \(roleTitle) account")
+                Text("Log in to your \(role.rawValue) account")
                     .font(.subheadline)
                     .foregroundColor(.gray)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -74,7 +77,11 @@ struct LoginView: View {
             
             // MARK: - Login Button
             // This navigates to the PIN screen next!
-            NavigationLink(destination: PINAuthenticationView(roleTitle: roleTitle, subtitle: "Set up a 4-digit quick access PIN")) {
+            Button {
+                session.chooseRole(role)
+                session.recordCredentials(email: email)
+                navigateToPIN = true
+            } label: {
                 Text("Sign In")
                     .font(.headline)
                     .fontWeight(.bold)
@@ -87,6 +94,18 @@ struct LoginView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 10)
+
+            NavigationLink(
+                destination: PINAuthenticationView(role: role, subtitle: "Set up a 4-digit quick access PIN"),
+                isActive: $navigateToPIN,
+                label: { EmptyView() }
+            )
+
+            NavigationLink(destination: SignUpView(role: role)) {
+                Text("Need an account? Create one")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(.figmaPrimary)
+            }
             
             Spacer()
         }

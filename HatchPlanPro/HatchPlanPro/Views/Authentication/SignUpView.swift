@@ -8,12 +8,15 @@ import SwiftUI
 
 struct SignUpView: View {
     @Environment(\.presentationMode) var presentationMode
-    let roleTitle: String // e.g., "Hatchery Manager"
+    @EnvironmentObject private var session: AppSessionViewModel
+
+    let role: HatcheryRole
     
     @State private var fullName: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
+    @State private var navigateToPIN = false
     
     var body: some View {
         VStack(spacing: 25) {
@@ -33,7 +36,7 @@ struct SignUpView: View {
             // MARK: - Title
             VStack(alignment: .leading, spacing: 8) {
                 // Dynamically creates "Create Manager Account" or "Create Supervisor Account"
-                let shortRole = roleTitle.replacingOccurrences(of: "Hatchery ", with: "")
+                let shortRole = role.rawValue.replacingOccurrences(of: "Hatchery ", with: "")
                 Text("Create \(shortRole) Account")
                     .font(.largeTitle)
                     .fontWeight(.bold)
@@ -93,7 +96,11 @@ struct SignUpView: View {
             .padding(.horizontal, 24)
             
             // MARK: - Sign Up Button (Navigates to PIN Screen)
-            NavigationLink(destination: PINAuthenticationView(roleTitle: roleTitle, subtitle: "Enter your \(roleTitle.lowercased().contains("manager") ? "manager" : "supervisor") PIN")) {
+            Button {
+                session.chooseRole(role)
+                session.recordCredentials(email: email, name: fullName)
+                navigateToPIN = true
+            } label: {
                 Text("Sign Up")
                     .font(.headline)
                     .fontWeight(.bold)
@@ -106,11 +113,17 @@ struct SignUpView: View {
             }
             .padding(.horizontal, 24)
             .padding(.top, 10)
+
+            NavigationLink(
+                destination: PINAuthenticationView(role: role, subtitle: "Enter your \(role.shortTitle.lowercased()) PIN"),
+                isActive: $navigateToPIN,
+                label: { EmptyView() }
+            )
             
             Spacer()
             
             // MARK: - Bottom Login Link
-            NavigationLink(destination: LoginView(roleTitle: roleTitle)) {
+            NavigationLink(destination: LoginView(role: role)) {
                 HStack(spacing: 4) {
                     Text("Already have an account?")
                         .foregroundColor(.gray)
@@ -128,5 +141,5 @@ struct SignUpView: View {
 }
 
 #Preview {
-    SignUpView(roleTitle: "Hatchery Manager")
+    SignUpView(role: .manager)
 }

@@ -8,6 +8,8 @@
 import SwiftUI
 
 struct LandingView: View {
+    @EnvironmentObject private var session: AppSessionViewModel
+
     var body: some View {
         NavigationView {
             ZStack {
@@ -41,15 +43,22 @@ struct LandingView: View {
                     // MARK: - Role Selection Buttons
                     // MARK: - Role Selection Buttons
                     VStack(spacing: 20) {
-                        NavigationLink(destination: LoginView(roleTitle: "Hatchery Manager")) {
-                            RoleSelectionButton(title: "Hatchery Manager", iconName: "briefcase.fill")
+                        NavigationLink(destination: LoginView(role: .manager)) {
+                            RoleSelectionButton(title: HatcheryRole.manager.rawValue, iconName: HatcheryRole.manager.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
-                        
-                        NavigationLink(destination: LoginView(roleTitle: "Hatchery Supervisor")) {
-                            RoleSelectionButton(title: "Hatchery Supervisor", iconName: "person.2.fill")
+
+                        NavigationLink(destination: LoginView(role: .supervisor)) {
+                            RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
+                    }
+
+                    NavigationLink(destination: SignUpView(role: session.currentRole)) {
+                        Text("Create a demo account")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundColor(.gray)
+                            .padding(.top, 6)
                     }
                     
                     Spacer()

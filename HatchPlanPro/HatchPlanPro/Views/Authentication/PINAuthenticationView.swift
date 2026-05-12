@@ -12,7 +12,7 @@ struct PINAuthenticationView: View {
     @StateObject private var viewModel = AuthViewModel()
     
     // These properties make the view dynamic for both roles!
-    let roleTitle: String
+    let role: HatcheryRole
     let subtitle: String
     
     // The layout for our keypad
@@ -52,7 +52,7 @@ struct PINAuthenticationView: View {
                     .frame(width: 60, height: 60)
                     .foregroundColor(Color(hex: "#20B2AA")) // Match your Figma teal/green here
                 
-                Text(roleTitle)
+                Text(role.rawValue)
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.figmaTextDark)
@@ -74,7 +74,7 @@ struct PINAuthenticationView: View {
             
             Spacer() // MARK: - Hidden Navigation to Biometric Setup
             NavigationLink(
-                destination: BiometricSetupView(roleTitle: roleTitle),
+                destination: BiometricSetupView(role: role),
                 isActive: $viewModel.isAuthenticated,
                 label: { EmptyView() }
             )
