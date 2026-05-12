@@ -42,7 +42,15 @@ final class HatcherySyncService {
             "role": role.rawValue,
             "updatedAt": FieldValue.serverTimestamp(),
             "batches": batchPayload,
-            "tasks": taskPayload
+            "tasks": taskPayload,
+            "securityTheme": [
+                "primary": "#245B24",
+                "accent": "#B78900"
+            ],
+            "supervisorProfile": [
+                "name": role == .supervisor ? "Hatchery Supervisor" : "Hatchery Manager",
+                "workflow": role == .supervisor ? "Supervisor flow" : "Manager flow"
+            ]
         ]
 
         database.collection("dashboardSnapshots").document(role.rawValue).setData(payload, merge: true) { error in

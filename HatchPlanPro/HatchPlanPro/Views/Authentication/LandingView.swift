@@ -43,13 +43,13 @@ struct LandingView: View {
                     // MARK: - Role Selection Buttons
                     // MARK: - Role Selection Buttons
                     VStack(spacing: 20) {
-                        NavigationLink(destination: LoginView(role: .manager)) {
-                            RoleSelectionButton(title: HatcheryRole.manager.rawValue, iconName: HatcheryRole.manager.displaySymbol)
+                        NavigationLink(destination: SupervisorSplashView()) {
+                            RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
 
-                        NavigationLink(destination: LoginView(role: .supervisor)) {
-                            RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)
+                        NavigationLink(destination: LoginView(role: .manager)) {
+                            RoleSelectionButton(title: HatcheryRole.manager.rawValue, iconName: HatcheryRole.manager.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }
