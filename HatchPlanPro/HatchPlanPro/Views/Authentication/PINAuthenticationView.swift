@@ -72,7 +72,12 @@ struct PINAuthenticationView: View {
             }
             .padding(.vertical, 20)
             
-            Spacer()
+            Spacer() // MARK: - Hidden Navigation to Biometric Setup
+            NavigationLink(
+                destination: BiometricSetupView(roleTitle: roleTitle),
+                isActive: $viewModel.isAuthenticated,
+                label: { EmptyView() }
+            )
             
             // MARK: - Number Pad
             LazyVGrid(columns: columns, spacing: 20) {

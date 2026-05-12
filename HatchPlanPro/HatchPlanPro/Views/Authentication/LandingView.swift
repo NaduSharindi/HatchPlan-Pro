@@ -22,7 +22,7 @@ struct LandingView: View {
                     // MARK: - Header Section
                     VStack(spacing: 8) {
                         // Add your Figma Logo Image here later
-                        Image(systemName: "egg.fill")
+                        Image(systemName: "bird.fill")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 80, height: 80)
@@ -39,16 +39,15 @@ struct LandingView: View {
                     }
                     
                     // MARK: - Role Selection Buttons
+                    // MARK: - Role Selection Buttons
                     VStack(spacing: 20) {
-                        // Update your Role Selection Buttons in LandingView to look like this:
-
-                        NavigationLink(destination: PINAuthenticationView(roleTitle: "Hatchery Manager", subtitle: "Enter your manager PIN")) {
-                            RoleSelectionButton(title: "Hatchery Manager", iconName: "briefcase.fill") { }
+                        NavigationLink(destination: LoginView(roleTitle: "Hatchery Manager")) {
+                            RoleSelectionButton(title: "Hatchery Manager", iconName: "briefcase.fill")
                         }
                         .buttonStyle(PlainButtonStyle())
-
-                        NavigationLink(destination: PINAuthenticationView(roleTitle: "Hatchery Supervisor", subtitle: "Enter your supervisor PIN")) {
-                            RoleSelectionButton(title: "Hatchery Supervisor", iconName: "person.2.fill") { }
+                        
+                        NavigationLink(destination: LoginView(roleTitle: "Hatchery Supervisor")) {
+                            RoleSelectionButton(title: "Hatchery Supervisor", iconName: "person.2.fill")
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

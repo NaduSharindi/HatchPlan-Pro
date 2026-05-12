@@ -11,6 +11,7 @@ import Combine
 
 class AuthViewModel: ObservableObject {
     @Published var pin: String = ""
+    @Published var isAuthenticated: Bool = false // Add this line!
     let maxPinLength = 4
     
     // MARK: - PIN Logic
@@ -32,9 +33,13 @@ class AuthViewModel: ObservableObject {
     }
     
     private func verifyPin() {
-        // TODO: We will connect this to Firebase Auth in the next step!
-        print("Verifying PIN: \(pin)")
-    }
+            print("Verifying PIN: \(pin)")
+        // Simulate a tiny delay so the user sees the 4th dot fill in
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    // This triggers the navigation!
+                    self.isAuthenticated = true
+                }
+            }
     
     // MARK: - Biometric Authentication (Advanced Coursework Feature)
     func authenticateWithBiometrics() {
