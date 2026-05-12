@@ -22,6 +22,8 @@ final class AppSessionViewModel: ObservableObject {
     @Published var preferredSecurityMethod = "PIN"
     @Published var lastSyncSummary = "Local draft"
     @Published var selectedTabIndex = 0
+    @Published var supervisorNotifications: [HatcheryNotification] = []
+    @Published var batchInsights: [BatchInsight] = []
 
     private let syncService = HatcherySyncService()
 
@@ -147,6 +149,69 @@ final class AppSessionViewModel: ObservableObject {
                 case .failure(let error):
                     self.lastSyncSummary = "Sync failed: \(error.localizedDescription)"
                     completion(self.lastSyncSummary)
+                }
+            }
+        }
+    }
+
+    func fetchSupervisorNotifications() {
+        syncService.fetchSupervisorNotifications { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let notifications):
+                    self.supervisorNotifications = notifications
+                case .failure(let error):
+                    print("Failed to fetch notifications: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func fetchBatchInsights() {
+        syncService.fetchBatchInsights { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let insights):
+                    self.batchInsights = insights
+                case .failure(let error):
+                    print("Failed to fetch batch insights: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func syncSupervisorData() {
+        // Create sample notifications and insights for supervisor
+        let sampleNotifications: [HatcheryNotification] = [
+            HatcheryNotification(type: .criticalAlert, title: "Batch #B1024 is 24 hours from hatching. Resource allocation required.", message: "Critical resource needed", timestamp: Date().addingTimeInterval(-120), timeLabel: "2m ago"),
+            HatcheryNotification(type: .approvalUpdate, title: "Plan for Batch #B1030 has been Approved by Manager Aruni.", message: "Batch approved", timestamp: Date().addingTimeInterval(-3600), timeLabel: "1h ago")
+        ]
+
+        syncService.syncSupervisorNotifications(notifications: sampleNotifications) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.supervisorNotifications = sampleNotifications
+                case .failure(let error):
+                    print("Failed to sync notifications: \(error.localizedDescription)")
+                }
+            }
+        }
+
+        // Create sample batch insights
+        let sampleInsights: [BatchInsight] = [
+            BatchInsight(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: .approvedReady, hatchRate: nil),
+            BatchInsight(batchID: "#B1029", breed: "Ross 708", date: "Oct 24, 2023", status: .pendingReview, hatchRate: nil),
+            BatchInsight(batchID: "#B2023-10-A", breed: "Cobb 500", date: "Oct 28, 2023", status: .synced, hatchRate: "94.5%")
+        ]
+
+        syncService.syncBatchInsights(insights: sampleInsights) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.batchInsights = sampleInsights
+                case .failure(let error):
+                    print("Failed to sync batch insights: \(error.localizedDescription)")
                 }
             }
         }

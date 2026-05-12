@@ -61,4 +61,118 @@ final class HatcherySyncService {
             }
         }
     }
+
+    func syncSupervisorNotifications(notifications: [HatcheryNotification],
+                                      completion: @escaping (Result<Void, Error>) -> Void) {
+        let notificationPayload = notifications.map { notification in
+            [
+                "id": notification.id,
+                "type": notification.type.rawValue,
+                "title": notification.title,
+                "message": notification.message,
+                "timestamp": notification.timestamp,
+                "timeLabel": notification.timeLabel
+            ] as [String: Any]
+        }
+
+        let payload: [String: Any] = [
+            "notifications": notificationPayload,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        database.collection("supervisorData").document("notifications").setData(payload, merge: true) { error in
+            if let error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    func syncBatchInsights(insights: [BatchInsight],
+                          completion: @escaping (Result<Void, Error>) -> Void) {
+        let insightPayload = insights.map { insight in
+            [
+                "id": insight.id,
+                "batchID": insight.batchID,
+                "breed": insight.breed,
+                "date": insight.date,
+                "status": insight.status.rawValue,
+                "hatchRate": insight.hatchRate ?? ""
+            ] as [String: Any]
+        }
+
+        let payload: [String: Any] = [
+            "insights": insightPayload,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        database.collection("supervisorData").document("batchInsights").setData(payload, merge: true) { error in
+            if let error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    func fetchSupervisorNotifications(completion: @escaping (Result<[HatcheryNotification], Error>) -> Void) {
+        database.collection("supervisorData").document("notifications").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let notificationsData = data["notifications"] as? [[String: Any]] else {
+                completion(.success([]))
+                return
+            }
+
+            let notifications = notificationsData.compactMap { notifDict in
+                guard let id = notifDict["id"] as? String,
+                      let typeString = notifDict["type"] as? String,
+                      let type = NotificationType(rawValue: typeString),
+                      let title = notifDict["title"] as? String,
+                      let message = notifDict["message"] as? String,
+                      let timestamp = notifDict["timestamp"] as? Timestamp,
+                      let timeLabel = notifDict["timeLabel"] as? String else {
+                    return nil
+                }
+                return HatcheryNotification(type: type, title: title, message: message, timestamp: timestamp.dateValue(), timeLabel: timeLabel)
+            }
+
+            completion(.success(notifications))
+        }
+    }
+
+    func fetchBatchInsights(completion: @escaping (Result<[BatchInsight], Error>) -> Void) {
+        database.collection("supervisorData").document("batchInsights").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let insightsData = data["insights"] as? [[String: Any]] else {
+                completion(.success([]))
+                return
+            }
+
+            let insights = insightsData.compactMap { insightDict in
+                guard let id = insightDict["id"] as? String,
+                      let batchID = insightDict["batchID"] as? String,
+                      let breed = insightDict["breed"] as? String,
+                      let date = insightDict["date"] as? String,
+                      let statusString = insightDict["status"] as? String,
+                      let status = BatchStatus(rawValue: statusString) else {
+                    return nil
+                }
+                let hatchRate = insightDict["hatchRate"] as? String
+                return BatchInsight(batchID: batchID, breed: breed, date: date, status: status, hatchRate: hatchRate)
+            }
+
+            completion(.success(insights))
+        }
+    }
 }

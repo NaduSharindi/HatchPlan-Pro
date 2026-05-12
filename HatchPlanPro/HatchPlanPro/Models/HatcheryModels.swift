@@ -103,3 +103,93 @@ struct HatcheryUserProfile: Hashable {
     let role: HatcheryRole
     let preferredSecurity: String
 }
+
+enum BatchStatus: String, Codable {
+    case approvedReady = "APPROVED"
+    case pendingReview = "PENDING"
+    case rejected = "REJECTED"
+    case synced = "SYNCED"
+
+    var displayName: String {
+        switch self {
+        case .approvedReady:
+            return "APPROVED"
+        case .pendingReview:
+            return "PENDING"
+        case .rejected:
+            return "REJECTED"
+        case .synced:
+            return "SYNCED"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .approvedReady, .synced:
+            return .hatchGreen
+        case .pendingReview:
+            return Color(hex: "#FFA500")
+        case .rejected:
+            return Color(hex: "#FF6B6B")
+        }
+    }
+}
+
+enum NotificationType: String, Codable {
+    case criticalAlert = "CRITICAL_ALERT"
+    case approvalUpdate = "APPROVAL_UPDATE"
+    case systemMessage = "SYSTEM_MESSAGE"
+    case weeklyReport = "WEEKLY_REPORT"
+
+    var displayName: String {
+        switch self {
+        case .criticalAlert:
+            return "CRITICAL ALERT"
+        case .approvalUpdate:
+            return "APPROVAL UPDATE"
+        case .systemMessage:
+            return "SYSTEM MESSAGE"
+        case .weeklyReport:
+            return "WEEKLY REPORT"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .criticalAlert:
+            return "exclamationmark.circle.fill"
+        case .approvalUpdate:
+            return "checkmark.circle.fill"
+        case .systemMessage:
+            return "gearshape.fill"
+        case .weeklyReport:
+            return "chart.bar.fill"
+        }
+    }
+}
+
+struct HatcheryNotification: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let type: NotificationType
+    let title: String
+    let message: String
+    let timestamp: Date
+    let timeLabel: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, type, title, message, timestamp, timeLabel
+    }
+}
+
+struct BatchInsight: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let batchID: String
+    let breed: String
+    let date: String
+    let status: BatchStatus
+    let hatchRate: String?
+
+    enum CodingKeys: String, CodingKey {
+        case id, batchID, breed, date, status, hatchRate
+    }
+}

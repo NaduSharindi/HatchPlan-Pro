@@ -12,49 +12,84 @@ struct ContentView: View {
     @State private var syncMessage: String = "Ready to sync"
 
     var body: some View {
+        if session.currentRole == .supervisor {
+            supervisorDashboard
+        } else {
+            managerDashboard
+        }
+    }
+
+    private var supervisorDashboard: some View {
         NavigationStack {
             TabView(selection: $session.selectedTabIndex) {
-                if session.currentRole == .supervisor {
-                    SupervisorHomeView()
-                        .tabItem { Label("Home", systemImage: "house.fill") }
-                        .tag(0)
+                SupervisorHomeView()
+                    .tabItem {
+                        Label("HOME", systemImage: "house.fill")
+                    }
+                    .tag(0)
 
-                    SupervisorBatchesView()
-                        .tabItem { Label("Batches", systemImage: "tray.full.fill") }
-                        .tag(1)
+                SupervisorBatchesView()
+                    .tabItem {
+                        Label("BATCHES", systemImage: "tray.full.fill")
+                    }
+                    .tag(1)
 
-                    SupervisorNotificationsView()
-                        .tabItem { Label("Notifications", systemImage: "bell.fill") }
-                        .tag(2)
+                SupervisorHistoryView()
+                    .tabItem {
+                        Label("HISTORY", systemImage: "clock.fill")
+                    }
+                    .tag(2)
 
-                    SupervisorHistoryView()
-                        .tabItem { Label("History", systemImage: "clock.arrow.circlepath") }
-                        .tag(3)
+                SupervisorNotificationsView()
+                    .tabItem {
+                        Label("ALERTS", systemImage: "bell.fill")
+                    }
+                    .tag(3)
 
-                    SupervisorSettingsView()
-                        .tabItem { Label("Settings", systemImage: "gearshape.fill") }
-                        .tag(4)
-                } else {
-                    dashboardHome
-                        .tabItem { Label("Dashboard", systemImage: "house.fill") }
-                        .tag(0)
+                SupervisorSettingsView()
+                    .tabItem {
+                        Label("SETTINGS", systemImage: "gearshape.fill")
+                    }
+                    .tag(4)
+            }
+            .tint(.hatchGreen)
+            .toolbarBackground(.visible, for: .tabBar)
+            .toolbarBackground(Color.white, for: .tabBar)
+        }
+    }
 
-                    batchesView
-                        .tabItem { Label("Batches", systemImage: "tray.full.fill") }
-                        .tag(1)
+    private var managerDashboard: some View {
+        NavigationStack {
+            TabView(selection: $session.selectedTabIndex) {
+                dashboardHome
+                    .tabItem {
+                        Label("Dashboard", systemImage: "house.fill")
+                    }
+                    .tag(0)
 
-                    tasksView
-                        .tabItem { Label("Tasks", systemImage: "checklist") }
-                        .tag(2)
+                batchesView
+                    .tabItem {
+                        Label("Batches", systemImage: "tray.full.fill")
+                    }
+                    .tag(1)
 
-                    alertsView
-                        .tabItem { Label("Alerts", systemImage: "bell.fill") }
-                        .tag(3)
+                tasksView
+                    .tabItem {
+                        Label("Tasks", systemImage: "checklist")
+                    }
+                    .tag(2)
 
-                    profileView
-                        .tabItem { Label("Profile", systemImage: "person.crop.circle.fill") }
-                        .tag(4)
-                }
+                alertsView
+                    .tabItem {
+                        Label("Alerts", systemImage: "bell.fill")
+                    }
+                    .tag(3)
+
+                profileView
+                    .tabItem {
+                        Label("Profile", systemImage: "person.crop.circle.fill")
+                    }
+                    .tag(4)
             }
             .tint(session.currentRole.accentColor)
             .toolbarBackground(.visible, for: .tabBar)
