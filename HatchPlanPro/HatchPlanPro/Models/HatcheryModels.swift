@@ -330,6 +330,7 @@ struct SourceFlockItem: Identifiable, Codable, Hashable {
 
 struct SupervisorObservation: Identifiable, Codable, Hashable {
     let id: String = UUID().uuidString
+    let category: String
     let note: String
     let authorName: String
     let authorRole: String
@@ -337,12 +338,31 @@ struct SupervisorObservation: Identifiable, Codable, Hashable {
     let attachedPhotos: [String]
 
     enum CodingKeys: String, CodingKey {
-        case id, note, authorName, authorRole, timeLabel, attachedPhotos
+        case id, category, note, authorName, authorRole, timeLabel, attachedPhotos
     }
+enum ObservationCategory: String, CaseIterable, Codable, Hashable {
+    case shellQuality = "Shell Quality"
+    case eggVitality = "Egg Vitality"
+    case temperatureVariance = "Temperature Variance"
+    case generalNote = "General Note"
+
+    var accentColor: Color {
+        switch self {
+        case .shellQuality:
+            return .hatchGreen
+        case .eggVitality:
+            return Color(hex: "#B78900")
+        case .temperatureVariance:
+            return Color(hex: "#245B24")
+        case .generalNote:
+            return Color(hex: "#7A7A7A")
+        }
+    }
+}
 }
 
 struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
-    let id: String = UUID().uuidString
+    let category: ObservationCategory
     let batchID: String
     let productionUnit: String
     let breed: String
@@ -350,7 +370,7 @@ struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
     let incubationStage: String
     let imageName: String
     let liveConnected: Bool
-    let sensors: [HatchSensorReading]
+        case id, category, note, authorName, authorRole, timeLabel, attachedPhotos
     let metricTiles: [HatchMetricTile]
     let operationalTimeline: [HatchMetricTile]
     let sourceFlocks: [SourceFlockItem]

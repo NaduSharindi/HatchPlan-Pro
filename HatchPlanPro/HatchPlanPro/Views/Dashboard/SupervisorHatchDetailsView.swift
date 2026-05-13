@@ -307,13 +307,16 @@ struct SupervisorHatchDetailsView: View {
                     .font(.headline.bold())
                     .foregroundColor(.hatchGreen)
                 Spacer()
-                Text("EDIT")
-                    .font(.caption.weight(.bold))
-                    .kerning(0.8)
-                    .foregroundColor(.white)
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, 12)
-                    .background(Capsule().fill(.hatchGreen))
+                NavigationLink(destination: SupervisorObservationEditorView(batch: batch, existingObservation: detail.observations.first)) {
+                    Text("EDIT")
+                        .font(.caption.weight(.bold))
+                        .kerning(0.8)
+                        .foregroundColor(.white)
+                        .padding(.vertical, 7)
+                        .padding(.horizontal, 12)
+                        .background(Capsule().fill(.hatchGreen))
+                }
+                .buttonStyle(.plain)
             }
 
             ForEach(detail.observations) { observation in
@@ -341,7 +344,7 @@ struct SupervisorHatchDetailsView: View {
                         }
                     }
 
-                    Button(action: {}) {
+                    NavigationLink(destination: SupervisorObservationEditorView(batch: batch, existingObservation: nil)) {
                         Label("Add New Observation", systemImage: "plus.circle.fill")
                             .font(.subheadline.weight(.semibold))
                             .foregroundColor(.hatchGreen)
@@ -349,6 +352,7 @@ struct SupervisorHatchDetailsView: View {
                             .padding(.vertical, 12)
                             .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#EAEAEA")))
                     }
+                    .buttonStyle(.plain)
 
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {

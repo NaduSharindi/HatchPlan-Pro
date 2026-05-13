@@ -98,7 +98,7 @@ final class AppSessionViewModel: ObservableObject {
                     HatchTimelineStep(title: "Final Hatch Completion", detail: "Day 21: Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
                 ],
                 observations: [
-                    SupervisorObservation(note: "Egg weight loss trending at 11.2%. Batch #B7-902 is slightly ahead of schedule. Ventilator intake adjusted +5% to compensate for metabolic heat.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+                    SupervisorObservation(category: .shellQuality, note: "Egg weight loss trending at 11.2%. Batch #B7-902 is slightly ahead of schedule. Ventilator intake adjusted +5% to compensate for metabolic heat.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
                 ],
                 eggSetDate: "Oct 20, 2023",
                 hatchDate: "Nov 10, 2023",
@@ -154,7 +154,7 @@ final class AppSessionViewModel: ObservableObject {
                 HatchTimelineStep(title: "Final Hatch Completion", detail: "Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
             ],
             observations: [
-                SupervisorObservation(note: "Batch monitoring continues with stable readings.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+                SupervisorObservation(category: .generalNote, note: "Batch monitoring continues with stable readings.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
             ],
             eggSetDate: "Oct 20, 2023",
             hatchDate: "Nov 10, 2023",
@@ -435,8 +435,77 @@ final class AppSessionViewModel: ObservableObject {
         }
     }
 
+    func saveObservation(for batchID: String,
+                         category: ObservationCategory,
+                         note: String,
+                         attachedPhotos: [String],
+                         editingObservationID: String? = nil) {
+        let currentSnapshot = hatchDetailSnapshots[batchID] ?? detailSnapshot(for: scheduledBatches.first(where: { $0.batchID == batchID }) ?? ScheduledBatch(batchID: batchID, breed: "Ross 308", eggs: 0, time: "00:00", timeOfDay: "AM", dateLabel: "TODAY", status: "", statusColor: .clear))
+
+        var updatedObservations = currentSnapshot.observations
+        let newObservation = SupervisorObservation(
+            category: category,
+            note: note,
+            authorName: currentUser.fullName,
+            authorRole: currentUser.role.shortTitle.uppercased(),
+            timeLabel: DateFormatter.observationTimestamp.string(from: Date()),
+            attachedPhotos: attachedPhotos
+        )
+
+        if let editingObservationID,
+           let index = updatedObservations.firstIndex(where: { $0.id == editingObservationID }) {
+            updatedObservations[index] = newObservation
+        } else {
+            updatedObservations.insert(newObservation, at: 0)
+        }
+
+        let updatedSnapshot = HatchDetailSnapshot(
+            batchID: currentSnapshot.batchID,
+            productionUnit: currentSnapshot.productionUnit,
+            breed: currentSnapshot.breed,
+            criticalStatus: currentSnapshot.criticalStatus,
+            incubationStage: currentSnapshot.incubationStage,
+            imageName: currentSnapshot.imageName,
+            liveConnected: currentSnapshot.liveConnected,
+            sensors: currentSnapshot.sensors,
+            metricTiles: currentSnapshot.metricTiles,
+            operationalTimeline: currentSnapshot.operationalTimeline,
+            sourceFlocks: currentSnapshot.sourceFlocks,
+            biologicalTimeline: currentSnapshot.biologicalTimeline,
+            observations: updatedObservations,
+            eggSetDate: currentSnapshot.eggSetDate,
+            hatchDate: currentSnapshot.hatchDate,
+            co2Value: currentSnapshot.co2Value,
+            co2Unit: currentSnapshot.co2Unit,
+            co2Bars: currentSnapshot.co2Bars,
+            eggsToSetLabel: currentSnapshot.eggsToSetLabel,
+            shavalsNeededLabel: currentSnapshot.shavalsNeededLabel
+        )
+
+        hatchDetailSnapshots[batchID] = updatedSnapshot
+        syncService.syncHatchDetail(updatedSnapshot) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self.hatchDetailSnapshots[batchID] = updatedSnapshot
+                case .failure(let error):
+                    print("Failed to save observation: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
     init() {
         initializeScheduledBatches()
         initializeHatchDetails()
     }
+}
+
+private extension DateFormatter {
+    static let observationTimestamp: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy • HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
 }

@@ -322,6 +322,7 @@ final class HatcherySyncService {
         let observationPayload = detail.observations.map { observation in
             [
                 "id": observation.id,
+                "category": observation.category.rawValue,
                 "note": observation.note,
                 "authorName": observation.authorName,
                 "authorRole": observation.authorRole,
@@ -418,12 +419,13 @@ final class HatcherySyncService {
             }
 
             let observations = (data["observations"] as? [[String: Any]] ?? []).compactMap { dict in
+                let category = ObservationCategory(rawValue: dict["category"] as? String ?? ObservationCategory.generalNote.rawValue) ?? .generalNote
                 guard let note = dict["note"] as? String,
                       let authorName = dict["authorName"] as? String,
                       let authorRole = dict["authorRole"] as? String,
                       let timeLabel = dict["timeLabel"] as? String,
                       let attachedPhotos = dict["attachedPhotos"] as? [String] else { return nil }
-                return SupervisorObservation(note: note, authorName: authorName, authorRole: authorRole, timeLabel: timeLabel, attachedPhotos: attachedPhotos)
+                return SupervisorObservation(category: category, note: note, authorName: authorName, authorRole: authorRole, timeLabel: timeLabel, attachedPhotos: attachedPhotos)
             }
 
             let co2Bars = data["co2Bars"] as? [Double] ?? [0.35, 0.55, 0.8, 0.72, 0.9]
