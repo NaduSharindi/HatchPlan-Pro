@@ -69,7 +69,10 @@ struct SupervisorScheduleView: View {
                                     // Batch Cards for this Date
                                     VStack(spacing: 12) {
                                         ForEach(dateGroup.batches) { batch in
-                                            scheduledBatchCard(batch)
+                                            NavigationLink(destination: SupervisorHatchDetailsView(batch: batch)) {
+                                                scheduledBatchCard(batch)
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
                                     .padding(.horizontal, 16)
@@ -110,6 +113,9 @@ struct SupervisorScheduleView: View {
             .navigationTitle("Schedule")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(false)
+            .onAppear {
+                session.fetchScheduledBatches()
+            }
         }
     }
 

@@ -277,3 +277,94 @@ struct EfficiencyForecast: Codable, Hashable {
         self.peakTime = peakTime
     }
 }
+
+struct HatchSensorReading: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let title: String
+    let value: String
+    let unit: String
+    let trend: String
+    let status: String
+    let iconName: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, value, unit, trend, status, iconName
+    }
+}
+
+struct HatchMetricTile: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let title: String
+    let value: String
+    let caption: String
+    let accent: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, value, caption, accent
+    }
+}
+
+struct HatchTimelineStep: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let title: String
+    let detail: String
+    let timeLabel: String
+    let state: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, detail, timeLabel, state
+    }
+}
+
+struct SourceFlockItem: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let flockID: String
+    let ageWeeks: String
+    let allocated: String
+    let statusLabel: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, flockID, ageWeeks, allocated, statusLabel
+    }
+}
+
+struct SupervisorObservation: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let note: String
+    let authorName: String
+    let authorRole: String
+    let timeLabel: String
+    let attachedPhotos: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case id, note, authorName, authorRole, timeLabel, attachedPhotos
+    }
+}
+
+struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let batchID: String
+    let productionUnit: String
+    let breed: String
+    let criticalStatus: String
+    let incubationStage: String
+    let imageName: String
+    let liveConnected: Bool
+    let sensors: [HatchSensorReading]
+    let metricTiles: [HatchMetricTile]
+    let operationalTimeline: [HatchMetricTile]
+    let sourceFlocks: [SourceFlockItem]
+    let biologicalTimeline: [HatchTimelineStep]
+    let observations: [SupervisorObservation]
+    let eggSetDate: String
+    let hatchDate: String
+    let co2Value: String
+    let co2Unit: String
+    let co2Bars: [Double]
+    let eggsToSetLabel: String
+    let shavalsNeededLabel: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, batchID, productionUnit, breed, criticalStatus, incubationStage, imageName, liveConnected, sensors, metricTiles, operationalTimeline, sourceFlocks, biologicalTimeline, observations, eggSetDate, hatchDate, co2Value, co2Unit, co2Bars, eggsToSetLabel, shavalsNeededLabel
+    }
+}

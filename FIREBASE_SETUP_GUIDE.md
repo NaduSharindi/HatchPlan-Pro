@@ -276,6 +276,91 @@ service cloud.firestore {
 }
 ```
 
+#### Document: `hatchDetails_{batchID}`
+
+**Stores**: Full hatch detail payload for the selected schedule row
+
+**Example document id**: `hatchDetails_#B7-902`
+
+**Fields**:
+
+```
+{
+  "batchID": string,
+  "productionUnit": string,
+  "breed": string,
+  "criticalStatus": string,
+  "incubationStage": string,
+  "imageName": string,
+  "liveConnected": boolean,
+  "sensors": [
+    {
+      "title": string,
+      "value": string,
+      "unit": string,
+      "trend": string,
+      "status": string,
+      "iconName": string
+    }
+  ],
+  "metricTiles": [
+    {
+      "title": string,
+      "value": string,
+      "caption": string,
+      "accent": string
+    }
+  ],
+  "operationalTimeline": [
+    {
+      "title": string,
+      "value": string,
+      "caption": string,
+      "accent": string
+    }
+  ],
+  "sourceFlocks": [
+    {
+      "flockID": string,
+      "ageWeeks": string,
+      "allocated": string,
+      "statusLabel": string
+    }
+  ],
+  "biologicalTimeline": [
+    {
+      "title": string,
+      "detail": string,
+      "timeLabel": string,
+      "state": string
+    }
+  ],
+  "observations": [
+    {
+      "note": string,
+      "authorName": string,
+      "authorRole": string,
+      "timeLabel": string,
+      "attachedPhotos": [string]
+    }
+  ],
+  "eggSetDate": string,
+  "hatchDate": string,
+  "co2Value": string,
+  "co2Unit": string,
+  "co2Bars": [number],
+  "eggsToSetLabel": string,
+  "shavalsNeededLabel": string,
+  "updatedAt": timestamp
+}
+```
+
+## Navigation Flow
+
+`SupervisorHomeView` -> `SupervisorScheduleView` -> `SupervisorHatchDetailsView`
+
+Tap any batch row in the schedule list to open the hatch details screen.
+
 ## Setup Instructions
 
 ### 1. Update Firestore Security Rules
@@ -294,6 +379,7 @@ Firestore will auto-create collections when first write occurs. To pre-populate:
 3. Create document `notifications` with the sample notifications data
 4. Create document `batchInsights` with the sample batch insights data
 5. Create document `schedule` with the sample schedule data
+6. Create document `hatchDetails_#B7-902` with the hatch detail data
 
 ### 3. Enable Authentication
 

@@ -264,4 +264,193 @@ final class HatcherySyncService {
             completion(.success((batches, forecast)))
         }
     }
+
+    func syncHatchDetail(_ detail: HatchDetailSnapshot,
+                         completion: @escaping (Result<Void, Error>) -> Void) {
+        let sensorPayload = detail.sensors.map { sensor in
+            [
+                "id": sensor.id,
+                "title": sensor.title,
+                "value": sensor.value,
+                "unit": sensor.unit,
+                "trend": sensor.trend,
+                "status": sensor.status,
+                "iconName": sensor.iconName
+            ] as [String: Any]
+        }
+
+        let metricPayload = detail.metricTiles.map { tile in
+            [
+                "id": tile.id,
+                "title": tile.title,
+                "value": tile.value,
+                "caption": tile.caption,
+                "accent": tile.accent
+            ] as [String: Any]
+        }
+
+        let operationalPayload = detail.operationalTimeline.map { tile in
+            [
+                "id": tile.id,
+                "title": tile.title,
+                "value": tile.value,
+                "caption": tile.caption,
+                "accent": tile.accent
+            ] as [String: Any]
+        }
+
+        let flockPayload = detail.sourceFlocks.map { flock in
+            [
+                "id": flock.id,
+                "flockID": flock.flockID,
+                "ageWeeks": flock.ageWeeks,
+                "allocated": flock.allocated,
+                "statusLabel": flock.statusLabel
+            ] as [String: Any]
+        }
+
+        let timelinePayload = detail.biologicalTimeline.map { step in
+            [
+                "id": step.id,
+                "title": step.title,
+                "detail": step.detail,
+                "timeLabel": step.timeLabel,
+                "state": step.state
+            ] as [String: Any]
+        }
+
+        let observationPayload = detail.observations.map { observation in
+            [
+                "id": observation.id,
+                "note": observation.note,
+                "authorName": observation.authorName,
+                "authorRole": observation.authorRole,
+                "timeLabel": observation.timeLabel,
+                "attachedPhotos": observation.attachedPhotos
+            ] as [String: Any]
+        }
+
+        let payload: [String: Any] = [
+            "batchID": detail.batchID,
+            "productionUnit": detail.productionUnit,
+            "breed": detail.breed,
+            "criticalStatus": detail.criticalStatus,
+            "incubationStage": detail.incubationStage,
+            "imageName": detail.imageName,
+            "liveConnected": detail.liveConnected,
+            "sensors": sensorPayload,
+            "metricTiles": metricPayload,
+            "operationalTimeline": operationalPayload,
+            "sourceFlocks": flockPayload,
+            "biologicalTimeline": timelinePayload,
+            "observations": observationPayload,
+            "eggSetDate": detail.eggSetDate,
+            "hatchDate": detail.hatchDate,
+            "co2Value": detail.co2Value,
+            "co2Unit": detail.co2Unit,
+            "co2Bars": detail.co2Bars,
+            "eggsToSetLabel": detail.eggsToSetLabel,
+            "shavalsNeededLabel": detail.shavalsNeededLabel,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        database.collection("supervisorData").document("hatchDetails_\(detail.batchID)").setData(payload, merge: true) { error in
+            if let error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    func fetchHatchDetail(batchID: String, completion: @escaping (Result<HatchDetailSnapshot, Error>) -> Void) {
+        database.collection("supervisorData").document("hatchDetails_\(batchID)").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = snapshot?.data() else {
+                completion(.failure(NSError(domain: "HatchDetails", code: 404, userInfo: [NSLocalizedDescriptionKey: "No hatch detail found"])))
+                return
+            }
+
+            let sensors = (data["sensors"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let title = dict["title"] as? String,
+                      let value = dict["value"] as? String,
+                      let unit = dict["unit"] as? String,
+                      let trend = dict["trend"] as? String,
+                      let status = dict["status"] as? String,
+                      let iconName = dict["iconName"] as? String else { return nil }
+                return HatchSensorReading(title: title, value: value, unit: unit, trend: trend, status: status, iconName: iconName)
+            }
+
+            let metricTiles = (data["metricTiles"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let title = dict["title"] as? String,
+                      let value = dict["value"] as? String,
+                      let caption = dict["caption"] as? String,
+                      let accent = dict["accent"] as? String else { return nil }
+                return HatchMetricTile(title: title, value: value, caption: caption, accent: accent)
+            }
+
+            let operationalTimeline = (data["operationalTimeline"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let title = dict["title"] as? String,
+                      let value = dict["value"] as? String,
+                      let caption = dict["caption"] as? String,
+                      let accent = dict["accent"] as? String else { return nil }
+                return HatchMetricTile(title: title, value: value, caption: caption, accent: accent)
+            }
+
+            let sourceFlocks = (data["sourceFlocks"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let flockID = dict["flockID"] as? String,
+                      let ageWeeks = dict["ageWeeks"] as? String,
+                      let allocated = dict["allocated"] as? String,
+                      let statusLabel = dict["statusLabel"] as? String else { return nil }
+                return SourceFlockItem(flockID: flockID, ageWeeks: ageWeeks, allocated: allocated, statusLabel: statusLabel)
+            }
+
+            let biologicalTimeline = (data["biologicalTimeline"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let title = dict["title"] as? String,
+                      let detail = dict["detail"] as? String,
+                      let timeLabel = dict["timeLabel"] as? String,
+                      let state = dict["state"] as? String else { return nil }
+                return HatchTimelineStep(title: title, detail: detail, timeLabel: timeLabel, state: state)
+            }
+
+            let observations = (data["observations"] as? [[String: Any]] ?? []).compactMap { dict in
+                guard let note = dict["note"] as? String,
+                      let authorName = dict["authorName"] as? String,
+                      let authorRole = dict["authorRole"] as? String,
+                      let timeLabel = dict["timeLabel"] as? String,
+                      let attachedPhotos = dict["attachedPhotos"] as? [String] else { return nil }
+                return SupervisorObservation(note: note, authorName: authorName, authorRole: authorRole, timeLabel: timeLabel, attachedPhotos: attachedPhotos)
+            }
+
+            let co2Bars = data["co2Bars"] as? [Double] ?? [0.35, 0.55, 0.8, 0.72, 0.9]
+            let detail = HatchDetailSnapshot(
+                batchID: data["batchID"] as? String ?? batchID,
+                productionUnit: data["productionUnit"] as? String ?? "PRODUCTION UNIT 04",
+                breed: data["breed"] as? String ?? "Ross 308 Superior Breed",
+                criticalStatus: data["criticalStatus"] as? String ?? "CRITICAL",
+                incubationStage: data["incubationStage"] as? String ?? "Day 20 of 21 (Hatch Window Open)",
+                imageName: data["imageName"] as? String ?? "hatch_detail_banner",
+                liveConnected: data["liveConnected"] as? Bool ?? true,
+                sensors: sensors,
+                metricTiles: metricTiles,
+                operationalTimeline: operationalTimeline,
+                sourceFlocks: sourceFlocks,
+                biologicalTimeline: biologicalTimeline,
+                observations: observations,
+                eggSetDate: data["eggSetDate"] as? String ?? "Oct 20, 2023",
+                hatchDate: data["hatchDate"] as? String ?? "Nov 10, 2023",
+                co2Value: data["co2Value"] as? String ?? "5,420",
+                co2Unit: data["co2Unit"] as? String ?? "ppm",
+                co2Bars: co2Bars,
+                eggsToSetLabel: data["eggsToSetLabel"] as? String ?? "14,500",
+                shavalsNeededLabel: data["shavalsNeededLabel"] as? String ?? "450"
+            )
+
+            completion(.success(detail))
+        }
+    }
 }

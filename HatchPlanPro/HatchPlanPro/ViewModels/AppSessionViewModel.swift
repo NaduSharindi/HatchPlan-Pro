@@ -26,6 +26,7 @@ final class AppSessionViewModel: ObservableObject {
     @Published var batchInsights: [BatchInsight] = []
     @Published var scheduledBatches: [ScheduledBatch] = []
     @Published var efficiencyForecast = EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75)
+    @Published var hatchDetailSnapshots: [String: HatchDetailSnapshot] = [:]
 
     private let syncService = HatcherySyncService()
 
@@ -62,6 +63,108 @@ final class AppSessionViewModel: ObservableObject {
         HatcheryAlert(title: "Incubator 3 door open", details: "Immediate attention is required to stabilise the chamber.", severity: "Critical", timeLabel: "2 min ago", iconName: "door.left.hand.open"),
         HatcheryAlert(title: "Brooder temperature steady", details: "Readings have been stable for the last 30 minutes.", severity: "Info", timeLabel: "12 min ago", iconName: "thermometer.sun.fill")
     ]
+
+    var defaultHatchDetails: [HatchDetailSnapshot] {
+        [
+            HatchDetailSnapshot(
+                batchID: "#B7-902",
+                productionUnit: "PRODUCTION UNIT 04",
+                breed: "Ross 308 Superior Breed",
+                criticalStatus: "CRITICAL",
+                incubationStage: "Day 20 of 21 (Hatch Window Open)",
+                imageName: "hatch_detail_banner",
+                liveConnected: true,
+                sensors: [
+                    HatchSensorReading(title: "TEMP", value: "37.5", unit: "°C", trend: "STABLE", status: "STABLE", iconName: "thermometer.medium"),
+                    HatchSensorReading(title: "HUMIDITY", value: "62.0", unit: "%", trend: "RISING", status: "RISING", iconName: "drop.fill")
+                ],
+                metricTiles: [
+                    HatchMetricTile(title: "EGGS TO SET", value: "14,500", caption: "Batch target capacity", accent: "#245B24"),
+                    HatchMetricTile(title: "SHAVALS NEEDED", value: "450", caption: "Estimated supply req.", accent: "#B78900")
+                ],
+                operationalTimeline: [
+                    HatchMetricTile(title: "EGG SET DATE", value: "Oct 20, 2023", caption: "Operational timeline", accent: "#245B24"),
+                    HatchMetricTile(title: "HATCH DATE", value: "Nov 10, 2023", caption: "Operational timeline", accent: "#B78900")
+                ],
+                sourceFlocks: [
+                    SourceFlockItem(flockID: "F-902", ageWeeks: "34 weeks", allocated: "6,000", statusLabel: "ALLOCATED"),
+                    SourceFlockItem(flockID: "F-815", ageWeeks: "41 weeks", allocated: "4,500", statusLabel: "ALLOCATED"),
+                    SourceFlockItem(flockID: "F-722", ageWeeks: "34 weeks", allocated: "4,000", statusLabel: "ALLOCATED")
+                ],
+                biologicalTimeline: [
+                    HatchTimelineStep(title: "Egg Setting", detail: "Day 1: 14,500 eggs placed in primary setters.", timeLabel: "COMPLETED", state: "completed"),
+                    HatchTimelineStep(title: "Incubation Phase", detail: "Days 1-18: Temperature and humidity cycling active.", timeLabel: "ACTIVE", state: "active"),
+                    HatchTimelineStep(title: "Transfer to Hatcher", detail: "Day 19: Transfer to hatcher baskets for final stage.", timeLabel: "UPCOMING", state: "upcoming"),
+                    HatchTimelineStep(title: "Final Hatch Completion", detail: "Day 21: Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
+                ],
+                observations: [
+                    SupervisorObservation(note: "Egg weight loss trending at 11.2%. Batch #B7-902 is slightly ahead of schedule. Ventilator intake adjusted +5% to compensate for metabolic heat.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+                ],
+                eggSetDate: "Oct 20, 2023",
+                hatchDate: "Nov 10, 2023",
+                co2Value: "5,420",
+                co2Unit: "ppm",
+                co2Bars: [0.35, 0.55, 0.8, 0.72, 0.9],
+                eggsToSetLabel: "14,500",
+                shavalsNeededLabel: "450"
+            )
+        ]
+    }
+
+    func initializeHatchDetails() {
+        for detail in defaultHatchDetails {
+            hatchDetailSnapshots[detail.batchID] = detail
+        }
+    }
+
+    func detailSnapshot(for batch: ScheduledBatch) -> HatchDetailSnapshot {
+        if let snapshot = hatchDetailSnapshots[batch.batchID] {
+            return snapshot
+        }
+
+        return HatchDetailSnapshot(
+            batchID: batch.batchID,
+            productionUnit: "PRODUCTION UNIT 04",
+            breed: batch.breed,
+            criticalStatus: batch.status.isEmpty ? "ON TRACK" : batch.status,
+            incubationStage: batch.dateLabel,
+            imageName: "hatch_detail_banner",
+            liveConnected: true,
+            sensors: [
+                HatchSensorReading(title: "TEMP", value: "37.5", unit: "°C", trend: "STABLE", status: "STABLE", iconName: "thermometer.medium"),
+                HatchSensorReading(title: "HUMIDITY", value: "62.0", unit: "%", trend: "RISING", status: "RISING", iconName: "drop.fill")
+            ],
+            metricTiles: [
+                HatchMetricTile(title: "EGGS TO SET", value: String(batch.eggs), caption: "Batch target capacity", accent: "#245B24"),
+                HatchMetricTile(title: "SHAVALS NEEDED", value: "450", caption: "Estimated supply req.", accent: "#B78900")
+            ],
+            operationalTimeline: [
+                HatchMetricTile(title: "EGG SET DATE", value: "Oct 20, 2023", caption: "Operational timeline", accent: "#245B24"),
+                HatchMetricTile(title: "HATCH DATE", value: "Nov 10, 2023", caption: "Operational timeline", accent: "#B78900")
+            ],
+            sourceFlocks: [
+                SourceFlockItem(flockID: "F-902", ageWeeks: "34 weeks", allocated: "6,000", statusLabel: "ALLOCATED"),
+                SourceFlockItem(flockID: "F-815", ageWeeks: "41 weeks", allocated: "4,500", statusLabel: "ALLOCATED"),
+                SourceFlockItem(flockID: "F-722", ageWeeks: "34 weeks", allocated: "4,000", statusLabel: "ALLOCATED")
+            ],
+            biologicalTimeline: [
+                HatchTimelineStep(title: "Egg Setting", detail: "Day 1: eggs placed in primary setters.", timeLabel: "COMPLETED", state: "completed"),
+                HatchTimelineStep(title: "Incubation Phase", detail: "Temperature and humidity cycling active.", timeLabel: "ACTIVE", state: "active"),
+                HatchTimelineStep(title: "Transfer to Hatcher", detail: "Transfer to hatcher baskets for final stage.", timeLabel: "UPCOMING", state: "upcoming"),
+                HatchTimelineStep(title: "Final Hatch Completion", detail: "Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
+            ],
+            observations: [
+                SupervisorObservation(note: "Batch monitoring continues with stable readings.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+            ],
+            eggSetDate: "Oct 20, 2023",
+            hatchDate: "Nov 10, 2023",
+            co2Value: "5,420",
+            co2Unit: "ppm",
+            co2Bars: [0.35, 0.55, 0.8, 0.72, 0.9],
+            eggsToSetLabel: String(batch.eggs),
+            shavalsNeededLabel: "450"
+        )
+    }
 
     func initializeScheduledBatches() {
         scheduledBatches = [
@@ -267,6 +370,9 @@ final class AppSessionViewModel: ObservableObject {
 
         // Sync schedule data
         syncScheduleData()
+
+        // Sync hatch detail data
+        syncHatchDetails()
     }
 
     func syncScheduleData() {
@@ -296,8 +402,41 @@ final class AppSessionViewModel: ObservableObject {
         }
     }
 
-    override init() {
-        super.init()
+    func syncHatchDetails() {
+        guard !scheduledBatches.isEmpty else {
+            return
+        }
+
+        for batch in scheduledBatches {
+            let detail = detailSnapshot(for: batch)
+            syncService.syncHatchDetail(detail) { result in
+                DispatchQueue.main.async {
+                    switch result {
+                    case .success:
+                        self.hatchDetailSnapshots[detail.batchID] = detail
+                    case .failure(let error):
+                        print("Failed to sync hatch details: \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
+    }
+
+    func fetchHatchDetail(for batchID: String) {
+        syncService.fetchHatchDetail(batchID: batchID) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let detail):
+                    self.hatchDetailSnapshots[batchID] = detail
+                case .failure(let error):
+                    print("Failed to fetch hatch detail: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    init() {
         initializeScheduledBatches()
+        initializeHatchDetails()
     }
 }
