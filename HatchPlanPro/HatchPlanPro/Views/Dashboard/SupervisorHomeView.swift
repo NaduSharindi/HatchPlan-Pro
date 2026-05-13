@@ -118,7 +118,7 @@ struct SupervisorHomeView: View {
                                 .font(.headline)
                                 .foregroundColor(.hatchGreen)
                             Spacer()
-                            NavigationLink(destination: SupervisorHistoryView()) {
+                            NavigationLink(destination: SupervisorScheduleView()) {
                                 Text("View Schedule")
                                     .font(.caption.weight(.semibold))
                                     .foregroundColor(.hatchGreen)

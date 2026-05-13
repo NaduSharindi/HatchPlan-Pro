@@ -193,3 +193,87 @@ struct BatchInsight: Identifiable, Codable, Hashable {
         case id, batchID, breed, date, status, hatchRate
     }
 }
+
+struct ScheduledBatch: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let batchID: String
+    let breed: String
+    let eggs: Int
+    let time: String                    // "08:45"
+    let timeOfDay: String               // "AM" or "PM"
+    let dateLabel: String               // "TODAY, OCT 25" or "TOMORROW, OCT 26"
+    let status: String                  // "CRITICAL", "ON DECK", etc.
+    let statusColor: Color              // Color for status badge
+
+    enum CodingKeys: String, CodingKey {
+        case id, batchID, breed, eggs, time, timeOfDay, dateLabel, status
+    }
+
+    init(id: String = UUID().uuidString,
+         batchID: String,
+         breed: String,
+         eggs: Int,
+         time: String,
+         timeOfDay: String,
+         dateLabel: String,
+         status: String,
+         statusColor: Color) {
+        self.id = id
+        self.batchID = batchID
+        self.breed = breed
+        self.eggs = eggs
+        self.time = time
+        self.timeOfDay = timeOfDay
+        self.dateLabel = dateLabel
+        self.status = status
+        self.statusColor = statusColor
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        batchID = try container.decode(String.self, forKey: .batchID)
+        breed = try container.decode(String.self, forKey: .breed)
+        eggs = try container.decode(Int.self, forKey: .eggs)
+        time = try container.decode(String.self, forKey: .time)
+        timeOfDay = try container.decode(String.self, forKey: .timeOfDay)
+        dateLabel = try container.decode(String.self, forKey: .dateLabel)
+        status = try container.decode(String.self, forKey: .status)
+        
+        // Determine color based on status
+        statusColor = {
+            switch status.uppercased() {
+            case "CRITICAL":
+                return Color(hex: "#FFB800")
+            case "ON DECK":
+                return .hatchGreen
+            default:
+                return Color.secondary
+            }
+        }()
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(batchID, forKey: .batchID)
+        try container.encode(breed, forKey: .breed)
+        try container.encode(eggs, forKey: .eggs)
+        try container.encode(time, forKey: .time)
+        try container.encode(timeOfDay, forKey: .timeOfDay)
+        try container.encode(dateLabel, forKey: .dateLabel)
+        try container.encode(status, forKey: .status)
+    }
+}
+
+struct EfficiencyForecast: Codable, Hashable {
+    let title: String                  // "Hatch window peaks in 4.5h"
+    let percentage: Double             // 0.0 to 1.0
+    let peakTime: String?              // "4.5h"
+
+    init(title: String, percentage: Double, peakTime: String? = nil) {
+        self.title = title
+        self.percentage = percentage
+        self.peakTime = peakTime
+    }
+}

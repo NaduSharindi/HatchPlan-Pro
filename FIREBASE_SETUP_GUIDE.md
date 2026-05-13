@@ -192,6 +192,90 @@ service cloud.firestore {
 }
 ```
 
+#### Document: `schedule`
+
+**Stores**: Scheduled batch information and efficiency forecast
+
+**Fields**:
+
+```
+{
+  "schedule": [
+    {
+      "id": string (UUID)
+      "batchID": string (e.g., "#B7-902")
+      "breed": string (e.g., "Ross 308")
+      "eggs": number (e.g., 12480)
+      "time": string (HH:MM format, e.g., "08:45")
+      "timeOfDay": string ("AM" or "PM")
+      "dateLabel": string (e.g., "TODAY, OCT 25")
+      "status": string (e.g., "CRITICAL", "ON DECK", "")
+    }
+  ]
+  "forecast": {
+    "title": string (e.g., "Hatch window peaks in 4.5h")
+    "percentage": number (0.0 to 1.0)
+    "peakTime": string or null (e.g., "4.5h")
+  }
+  "updatedAt": timestamp (server time when last updated)
+}
+```
+
+**Sample Data**:
+
+```json
+{
+  "schedule": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440020",
+      "batchID": "#B7-902",
+      "breed": "Ross 308",
+      "eggs": 12480,
+      "time": "08:45",
+      "timeOfDay": "AM",
+      "dateLabel": "TODAY, OCT 25",
+      "status": "CRITICAL"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440021",
+      "batchID": "#C2-114",
+      "breed": "Cobb 500",
+      "eggs": 8200,
+      "time": "11:30",
+      "timeOfDay": "AM",
+      "dateLabel": "TODAY, OCT 25",
+      "status": "ON DECK"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440022",
+      "batchID": "#A9-442",
+      "breed": "Ross 308",
+      "eggs": 15000,
+      "time": "06:00",
+      "timeOfDay": "AM",
+      "dateLabel": "TOMORROW, OCT 26",
+      "status": ""
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440023",
+      "batchID": "#B3-008",
+      "breed": "Hubbard",
+      "eggs": 5600,
+      "time": "02:15",
+      "timeOfDay": "PM",
+      "dateLabel": "TOMORROW, OCT 26",
+      "status": ""
+    }
+  ],
+  "forecast": {
+    "title": "Hatch window peaks in 4.5h",
+    "percentage": 0.75,
+    "peakTime": "4.5h"
+  },
+  "updatedAt": 1715514120
+}
+```
+
 ## Setup Instructions
 
 ### 1. Update Firestore Security Rules
@@ -209,6 +293,7 @@ Firestore will auto-create collections when first write occurs. To pre-populate:
 2. Click "Start collection" → name it `supervisorData`
 3. Create document `notifications` with the sample notifications data
 4. Create document `batchInsights` with the sample batch insights data
+5. Create document `schedule` with the sample schedule data
 
 ### 3. Enable Authentication
 

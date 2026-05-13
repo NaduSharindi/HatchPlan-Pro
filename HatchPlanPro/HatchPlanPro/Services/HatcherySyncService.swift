@@ -175,4 +175,93 @@ final class HatcherySyncService {
             completion(.success(insights))
         }
     }
+
+    func syncScheduledBatches(schedule: [ScheduledBatch],
+                             forecast: EfficiencyForecast,
+                             completion: @escaping (Result<Void, Error>) -> Void) {
+        let schedulePayload = schedule.map { batch in
+            [
+                "id": batch.id,
+                "batchID": batch.batchID,
+                "breed": batch.breed,
+                "eggs": batch.eggs,
+                "time": batch.time,
+                "timeOfDay": batch.timeOfDay,
+                "dateLabel": batch.dateLabel,
+                "status": batch.status
+            ] as [String: Any]
+        }
+
+        let forecastPayload: [String: Any] = [
+            "title": forecast.title,
+            "percentage": forecast.percentage,
+            "peakTime": forecast.peakTime ?? ""
+        ]
+
+        let payload: [String: Any] = [
+            "schedule": schedulePayload,
+            "forecast": forecastPayload,
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        database.collection("supervisorData").document("schedule").setData(payload, merge: true) { error in
+            if let error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    func fetchScheduledBatches(completion: @escaping (Result<([ScheduledBatch], EfficiencyForecast), Error>) -> Void) {
+        database.collection("supervisorData").document("schedule").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let scheduleData = data["schedule"] as? [[String: Any]],
+                  let forecastData = data["forecast"] as? [String: Any] else {
+                completion(.success(([], EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75))))
+                return
+            }
+
+            let batches = scheduleData.compactMap { batchDict in
+                guard let id = batchDict["id"] as? String,
+                      let batchID = batchDict["batchID"] as? String,
+                      let breed = batchDict["breed"] as? String,
+                      let eggs = batchDict["eggs"] as? Int,
+                      let time = batchDict["time"] as? String,
+                      let timeOfDay = batchDict["timeOfDay"] as? String,
+                      let dateLabel = batchDict["dateLabel"] as? String,
+                      let status = batchDict["status"] as? String else {
+                    return nil
+                }
+
+                let statusColor: Color
+                switch status.uppercased() {
+                case "CRITICAL":
+                    statusColor = Color(hex: "#FFB800")
+                case "ON DECK":
+                    statusColor = .hatchGreen
+                default:
+                    statusColor = .clear
+                }
+
+                return ScheduledBatch(id: id, batchID: batchID, breed: breed, eggs: eggs, time: time, timeOfDay: timeOfDay, dateLabel: dateLabel, status: status, statusColor: statusColor)
+            }
+
+            let forecast: EfficiencyForecast
+            if let title = forecastData["title"] as? String,
+               let percentage = forecastData["percentage"] as? Double,
+               let peakTime = forecastData["peakTime"] as? String {
+                forecast = EfficiencyForecast(title: title, percentage: percentage, peakTime: peakTime.isEmpty ? nil : peakTime)
+            } else {
+                forecast = EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75)
+            }
+
+            completion(.success((batches, forecast)))
+        }
+    }
 }

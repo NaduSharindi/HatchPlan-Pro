@@ -24,6 +24,8 @@ final class AppSessionViewModel: ObservableObject {
     @Published var selectedTabIndex = 0
     @Published var supervisorNotifications: [HatcheryNotification] = []
     @Published var batchInsights: [BatchInsight] = []
+    @Published var scheduledBatches: [ScheduledBatch] = []
+    @Published var efficiencyForecast = EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75)
 
     private let syncService = HatcherySyncService()
 
@@ -60,6 +62,53 @@ final class AppSessionViewModel: ObservableObject {
         HatcheryAlert(title: "Incubator 3 door open", details: "Immediate attention is required to stabilise the chamber.", severity: "Critical", timeLabel: "2 min ago", iconName: "door.left.hand.open"),
         HatcheryAlert(title: "Brooder temperature steady", details: "Readings have been stable for the last 30 minutes.", severity: "Info", timeLabel: "12 min ago", iconName: "thermometer.sun.fill")
     ]
+
+    func initializeScheduledBatches() {
+        scheduledBatches = [
+            // Today, Oct 25
+            ScheduledBatch(
+                batchID: "#B7-902",
+                breed: "Ross 308",
+                eggs: 12480,
+                time: "08:45",
+                timeOfDay: "AM",
+                dateLabel: "TODAY, OCT 25",
+                status: "CRITICAL",
+                statusColor: Color(hex: "#FFB800")
+            ),
+            ScheduledBatch(
+                batchID: "#C2-114",
+                breed: "Cobb 500",
+                eggs: 8200,
+                time: "11:30",
+                timeOfDay: "AM",
+                dateLabel: "TODAY, OCT 25",
+                status: "ON DECK",
+                statusColor: .hatchGreen
+            ),
+            // Tomorrow, Oct 26
+            ScheduledBatch(
+                batchID: "#A9-442",
+                breed: "Ross 308",
+                eggs: 15000,
+                time: "06:00",
+                timeOfDay: "AM",
+                dateLabel: "TOMORROW, OCT 26",
+                status: "",
+                statusColor: .clear
+            ),
+            ScheduledBatch(
+                batchID: "#B3-008",
+                breed: "Hubbard",
+                eggs: 5600,
+                time: "02:15",
+                timeOfDay: "PM",
+                dateLabel: "TOMORROW, OCT 26",
+                status: "",
+                statusColor: .clear
+            )
+        ]
+    }
 
     var batches: [HatcheryBatch] {
         currentRole == .manager ? managerBatches : supervisorBatches
@@ -215,5 +264,40 @@ final class AppSessionViewModel: ObservableObject {
                 }
             }
         }
+
+        // Sync schedule data
+        syncScheduleData()
+    }
+
+    func syncScheduleData() {
+        syncService.syncScheduledBatches(schedule: scheduledBatches, forecast: efficiencyForecast) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Schedule synced to Firebase")
+                case .failure(let error):
+                    print("Failed to sync schedule: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func fetchScheduledBatches() {
+        syncService.fetchScheduledBatches { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let (batches, forecast)):
+                    self.scheduledBatches = batches
+                    self.efficiencyForecast = forecast
+                case .failure(let error):
+                    print("Failed to fetch scheduled batches: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    override init() {
+        super.init()
+        initializeScheduledBatches()
     }
 }
