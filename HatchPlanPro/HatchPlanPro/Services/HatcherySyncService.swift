@@ -455,4 +455,129 @@ final class HatcherySyncService {
             completion(.success(detail))
         }
     }
+
+    // MARK: - Vision Kit Scanned Batch Sync
+
+    func syncScannedBatch(_ batch: ScannedBatch, completion: @escaping (Result<Void, Error>) -> Void) {
+        var payload: [String: Any] = [
+            "batchID": batch.batchID,
+            "breed": batch.breed,
+            "eggs": batch.eggs,
+            "targetChicks": batch.targetChicks,
+            "eggSetDate": batch.eggSetDate,
+            "hatchDate": batch.hatchDate,
+            "status": batch.status.rawValue,
+            "createdAt": FieldValue.serverTimestamp(),
+            "createdBy": batch.createdBy
+        ]
+
+        if let scanResult = batch.scanResult {
+            payload["scanResult"] = [
+                "flockID": scanResult.flockID ?? "",
+                "scanDate": scanResult.scanDate ?? "",
+                "confidence": scanResult.confidence,
+                "fieldsFound": scanResult.fieldsFound,
+                "rawText": scanResult.rawText,
+                "timestamp": FieldValue.serverTimestamp()
+            ]
+        }
+
+        database.collection("supervisorData")
+            .document("scannedBatches_\(batch.batchID)")
+            .setData(payload) { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(()))
+                }
+            }
+    }
+
+    func fetchScannedBatches(completion: @escaping (Result<[ScannedBatch], Error>) -> Void) {
+        database.collection("supervisorData")
+            .whereField("batch ID", isNotEqualTo: "")
+            .getDocuments { snapshot, error in
+                if let error = error {
+                    completion(.failure(error))
+                    return
+                }
+
+                guard let snapshot = snapshot else {
+                    completion(.success([]))
+                    return
+                }
+
+                let batches = snapshot.documents.compactMap { doc in
+                    let data = doc.data()
+                    guard let batchID = data["batchID"] as? String,
+                          let breed = data["breed"] as? String,
+                          let eggs = data["eggs"] as? Int,
+                          let targetChicks = data["targetChicks"] as? Int,
+                          let eggSetDate = data["eggSetDate"] as? String,
+                          let hatchDate = data["hatchDate"] as? String,
+                          let statusRaw = data["status"] as? String,
+                          let status = BatchStatus(rawValue: statusRaw),
+                          let createdBy = data["createdBy"] as? String else {
+                        return nil
+                    }
+
+                    var scanResult: VisionScanResult?
+                    if let scanData = data["scanResult"] as? [String: Any] {
+                        let flockID = scanData["flockID"] as? String
+                        let scanDate = scanData["scanDate"] as? String
+                        let confidence = scanData["confidence"] as? Double ?? 0.0
+                        let fieldsFound = scanData["fieldsFound"] as? Int ?? 0
+                        let rawText = scanData["rawText"] as? String ?? ""
+                        
+                        scanResult = VisionScanResult(
+                            flockID: flockID,
+                            scanDate: scanDate,
+                            confidence: confidence,
+                            fieldsFound: fieldsFound,
+                            rawText: rawText,
+                            timestamp: Date()
+                        )
+                    }
+
+                    return ScannedBatch(
+                        batchID: batchID,
+                        breed: breed,
+                        eggs: eggs,
+                        targetChicks: targetChicks,
+                        eggSetDate: eggSetDate,
+                        hatchDate: hatchDate,
+                        status: status,
+                        scanResult: scanResult,
+                        createdAt: Date(),
+                        createdBy: createdBy
+                    )
+                }
+
+                completion(.success(batches))
+            }
+    }
+
+    // MARK: - Execute Set Sync
+    func syncExecuteSet(batchID: String, payload: [String: Any], completion: @escaping (Result<Void, Error>) -> Void) {
+        // write execution record and update hatch detail document
+        let docId = "execute_\(batchID)"
+        var data = payload
+        data["executedAt"] = FieldValue.serverTimestamp()
+
+        database.collection("supervisorData").document(docId).setData(data) { error in
+            if let error = error {
+                completion(.failure(error))
+            } else {
+                // also set a flag on hatchDetails document for easy lookup
+                let detailDoc = "hatchDetails_\(batchID)"
+                database.collection("supervisorData").document(detailDoc).setData(["status": "SYNCED", "lastExecutedAt": FieldValue.serverTimestamp()], merge: true) { err in
+                    if let err = err {
+                        completion(.failure(err))
+                    } else {
+                        completion(.success(()))
+                    }
+                }
+            }
+        }
+    }
 }

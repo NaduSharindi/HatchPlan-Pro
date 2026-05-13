@@ -340,6 +340,8 @@ struct SupervisorObservation: Identifiable, Codable, Hashable {
     enum CodingKeys: String, CodingKey {
         case id, category, note, authorName, authorRole, timeLabel, attachedPhotos
     }
+}
+
 enum ObservationCategory: String, CaseIterable, Codable, Hashable {
     case shellQuality = "Shell Quality"
     case eggVitality = "Egg Vitality"
@@ -359,10 +361,9 @@ enum ObservationCategory: String, CaseIterable, Codable, Hashable {
         }
     }
 }
-}
 
 struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
-    let category: ObservationCategory
+    let id: String = UUID().uuidString
     let batchID: String
     let productionUnit: String
     let breed: String
@@ -370,7 +371,6 @@ struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
     let incubationStage: String
     let imageName: String
     let liveConnected: Bool
-        case id, category, note, authorName, authorRole, timeLabel, attachedPhotos
     let metricTiles: [HatchMetricTile]
     let operationalTimeline: [HatchMetricTile]
     let sourceFlocks: [SourceFlockItem]
@@ -385,6 +385,40 @@ struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
     let shavalsNeededLabel: String
 
     enum CodingKeys: String, CodingKey {
-        case id, batchID, productionUnit, breed, criticalStatus, incubationStage, imageName, liveConnected, sensors, metricTiles, operationalTimeline, sourceFlocks, biologicalTimeline, observations, eggSetDate, hatchDate, co2Value, co2Unit, co2Bars, eggsToSetLabel, shavalsNeededLabel
+        case id, batchID, productionUnit, breed, criticalStatus, incubationStage, imageName, liveConnected, metricTiles, operationalTimeline, sourceFlocks, biologicalTimeline, observations, eggSetDate, hatchDate, co2Value, co2Unit, co2Bars, eggsToSetLabel, shavalsNeededLabel
+    }
+}
+
+// MARK: - Vision Kit Models
+
+struct VisionScanResult: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let flockID: String?
+    let scanDate: String?
+    let confidence: Double
+    let fieldsFound: Int
+    let rawText: String
+    let timestamp: Date
+
+    enum CodingKeys: String, CodingKey {
+        case id, flockID, scanDate, confidence, fieldsFound, rawText, timestamp
+    }
+}
+
+struct ScannedBatch: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let batchID: String
+    let breed: String
+    let eggs: Int
+    let targetChicks: Int
+    let eggSetDate: String
+    let hatchDate: String
+    let status: BatchStatus
+    let scanResult: VisionScanResult?
+    let createdAt: Date
+    let createdBy: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, batchID, breed, eggs, targetChicks, eggSetDate, hatchDate, status, scanResult, createdAt, createdBy
     }
 }

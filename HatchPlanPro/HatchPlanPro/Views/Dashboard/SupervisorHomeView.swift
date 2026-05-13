@@ -188,6 +188,22 @@ struct SupervisorHomeView: View {
             .background(Color.hatchSurface.ignoresSafeArea())
             .navigationTitle("HatchPlan Pro")
             .navigationBarTitleDisplayMode(.inline)
+            .overlay(alignment: .bottomTrailing) {
+                NavigationLink(destination: ScannerIntroView()) {
+                    ZStack {
+                        Circle()
+                            .fill(Color.hatchGreen)
+                            .frame(width: 56, height: 56)
+                        
+                        Image(systemName: "plus")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(.white)
+                    }
+                    .shadow(color: Color.hatchGreen.opacity(0.4), radius: 8, x: 0, y: 4)
+                }
+                .padding(.trailing, 20)
+                .padding(.bottom, 20)
+            }
         }
     }
 

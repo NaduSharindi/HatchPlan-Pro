@@ -157,31 +157,33 @@ struct SupervisorBatchesView: View {
 
             VStack(spacing: 10) {
                 ForEach(batches.indices, id: \.self) { index in
-                    HStack(alignment: .center, spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(batches[index].id)
-                                .font(.headline)
-                            Text(batches[index].breed)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            Text(batches[index].date)
-                                .font(.caption2)
+                    let item = batches[index]
+                    NavigationLink(destination: BatchDetailView(batchID: item.id, breed: item.breed, date: item.date, status: item.status, statusColor: item.statusColor).environmentObject(session)) {
+                        HStack(alignment: .center, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(item.id)
+                                    .font(.headline)
+                                Text(item.breed)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                Text(item.date)
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Text(item.status)
+                                .font(.caption2.weight(.bold))
+                                .kerning(0.8)
+                                .foregroundColor(.white)
+                                .padding(.vertical, 4)
+                                .padding(.horizontal, 10)
+                                .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(item.statusColor))
+                            Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                         }
-                        Spacer()
-                        Text(batches[index].status)
-                            .font(.caption2.weight(.bold))
-                            .kerning(0.8)
-                            .foregroundColor(.white)
-                            .padding(.vertical, 4)
-                            .padding(.horizontal, 10)
-                            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(batches[index].statusColor))
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(.secondary)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
                     }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
-                }
             }
         }
         .padding(16)

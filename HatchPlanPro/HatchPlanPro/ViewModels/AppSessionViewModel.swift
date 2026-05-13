@@ -27,6 +27,7 @@ final class AppSessionViewModel: ObservableObject {
     @Published var scheduledBatches: [ScheduledBatch] = []
     @Published var efficiencyForecast = EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75)
     @Published var hatchDetailSnapshots: [String: HatchDetailSnapshot] = [:]
+    @Published var scannedBatches: [ScannedBatch] = []
 
     private let syncService = HatcherySyncService()
 
@@ -490,6 +491,85 @@ final class AppSessionViewModel: ObservableObject {
                     self.hatchDetailSnapshots[batchID] = updatedSnapshot
                 case .failure(let error):
                     print("Failed to save observation: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Vision Kit Scanned Batch Methods
+
+    func saveScannedBatch(_ batch: ScannedBatch) {
+        scannedBatches.append(batch)
+        syncService.syncScannedBatch(batch) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    print("Scanned batch saved successfully: \(batch.batchID)")
+                case .failure(let error):
+                    print("Failed to save scanned batch: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    func fetchScannedBatches() {
+        syncService.fetchScannedBatches { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let batches):
+                    self.scannedBatches = batches
+                case .failure(let error):
+                    print("Failed to fetch scanned batches: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    // MARK: - Execute Set
+    func executeSet(batchID: String, completion: @escaping (Bool) -> Void) {
+        // Prepare payload
+        let snapshot = hatchDetailSnapshots[batchID]
+        let units = snapshot?.eggsToSetLabel ?? ""
+        let payload: [String: Any] = [
+            "batchID": batchID,
+            "initiatedBy": currentUser.fullName,
+            "units": units,
+            "notes": "Executed set from supervisor app"
+        ]
+
+        syncService.syncExecuteSet(batchID: batchID, payload: payload) { result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    // update local snapshot status
+                    if let old = self.hatchDetailSnapshots[batchID] {
+                        let updated = HatchDetailSnapshot(
+                            batchID: old.batchID,
+                            productionUnit: old.productionUnit,
+                            breed: old.breed,
+                            criticalStatus: "SYNCED",
+                            incubationStage: old.incubationStage,
+                            imageName: old.imageName,
+                            liveConnected: old.liveConnected,
+                            metricTiles: old.metricTiles,
+                            operationalTimeline: old.operationalTimeline,
+                            sourceFlocks: old.sourceFlocks,
+                            biologicalTimeline: old.biologicalTimeline,
+                            observations: old.observations,
+                            eggSetDate: old.eggSetDate,
+                            hatchDate: old.hatchDate,
+                            co2Value: old.co2Value,
+                            co2Unit: old.co2Unit,
+                            co2Bars: old.co2Bars,
+                            eggsToSetLabel: old.eggsToSetLabel,
+                            shavalsNeededLabel: old.shavalsNeededLabel
+                        )
+                        self.hatchDetailSnapshots[batchID] = updated
+                    }
+                    completion(true)
+                case .failure(let error):
+                    print("Failed to execute set: \(error.localizedDescription)")
+                    completion(false)
                 }
             }
         }
