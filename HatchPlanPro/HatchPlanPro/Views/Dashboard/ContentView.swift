@@ -55,35 +55,29 @@ struct ContentView: View {
             TabView(selection: $session.selectedTabIndex) {
                 ManagerHomeView()
                     .tabItem {
-                        Label("Dashboard", systemImage: "house.fill")
+                        Label("Home", systemImage: "house.fill")
                     }
                     .tag(0)
 
-                ManagerBatchesView()
+                ManagerApprovalsView()
                     .tabItem {
-                        Label("Batches", systemImage: "tray.full.fill")
+                        Label("Approvals", systemImage: "checklist")
                     }
                     .tag(1)
 
-                ManagerTasksView()
+                ManagerMapView()
                     .tabItem {
-                        Label("Tasks", systemImage: "checklist")
+                        Label("Map", systemImage: "map.fill")
                     }
                     .tag(2)
 
-                ManagerAlertsView()
+                ManagerSettingsView()
                     .tabItem {
-                        Label("Alerts", systemImage: "bell.fill")
+                        Label("Settings", systemImage: "gearshape.fill")
                     }
                     .tag(3)
-
-                ManagerProfileView()
-                    .tabItem {
-                        Label("Profile", systemImage: "person.crop.circle.fill")
-                    }
-                    .tag(4)
             }
-            .tint(Color.figmaPrimary)
+            .tint(.hatchGreen)
             .toolbarBackground(.visible, for: .tabBar)
             .toolbarBackground(Color.white, for: .tabBar)
         }

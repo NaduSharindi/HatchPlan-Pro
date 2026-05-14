@@ -12,8 +12,8 @@ import SwiftUI
 final class AppSessionViewModel: ObservableObject {
     @Published var currentRole: HatcheryRole = .manager
     @Published var currentUser = HatcheryUserProfile(
-        fullName: "Nadunika Sharindi",
-        email: "nadunika@hatchplanpro.com",
+        fullName: "Ms Nadunika",
+        email: "lead.agronomist@hatchplan.pro",
         role: .manager,
         preferredSecurity: "PIN + Face ID"
     )
@@ -255,8 +255,8 @@ final class AppSessionViewModel: ObservableObject {
     func chooseRole(_ role: HatcheryRole) {
         currentRole = role
         currentUser = HatcheryUserProfile(
-            fullName: role == .manager ? "Hatchery Manager" : "Hatchery Supervisor",
-            email: role == .manager ? "manager@hatchplanpro.com" : "supervisor@hatchplanpro.com",
+            fullName: role == .manager ? "Ms Nadunika" : "Hatchery Supervisor",
+            email: role == .manager ? "lead.agronomist@hatchplan.pro" : "supervisor@hatchplanpro.com",
             role: role,
             preferredSecurity: preferredSecurityMethod
         )

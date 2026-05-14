@@ -1,81 +1,209 @@
 import SwiftUI
 
-struct ManagerProfileView: View {
+struct ManagerSettingsView: View {
     @EnvironmentObject private var session: AppSessionViewModel
-    
+    @State private var systemNotificationsEnabled = true
+    @State private var hapticFeedbackEnabled = true
+    @State private var siriSearchEnabled = true
+
     var body: some View {
-        ScrollView {
+        ScrollView(showsIndicators: false) {
             VStack(spacing: 18) {
-                VStack(spacing: 12) {
-                    Image(systemName: session.currentRole.displaySymbol)
-                        .font(.system(size: 44, weight: .semibold))
-                        .foregroundColor(.white)
-                        .frame(width: 96, height: 96)
-                        .background(Circle().fill(Color.figmaPrimary))
-
-                    Text(session.currentUser.fullName)
-                        .font(.title2.bold())
-                        .foregroundColor(.figmaTextDark)
-
-                    Text(session.currentUser.email)
-                        .foregroundColor(.secondary)
-
-                    Text("Security: \(session.currentUser.preferredSecurity)")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundColor(Color.figmaPrimary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(Capsule().fill(Color.figmaPrimary.opacity(0.12)))
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(RoundedRectangle(cornerRadius: 28, style: .continuous).fill(.white))
-                .shadow(color: .black.opacity(0.06), radius: 18, x: 0, y: 8)
-
-                VStack(alignment: .leading, spacing: 14) {
-                    Text("Workspace")
-                        .font(.headline)
-                        .foregroundColor(.figmaTextDark)
-                    
-                    VStack(spacing: 12) {
-                        profileRow(label: "Role", value: session.currentRole.rawValue)
-                        profileRow(label: "Onboarding", value: "Complete")
-                        profileRow(label: "Last sync", value: session.lastSyncSummary)
+                header
+                profileCard
+                sectionTitle("PREFERENCES")
+                settingsCard {
+                    toggleRow(icon: "bell.fill", title: "System Notifications", isOn: $systemNotificationsEnabled)
+                    divider
+                    toggleRow(icon: "iphone.radiowaves.left.and.right", title: "Haptic Feedback", isOn: $hapticFeedbackEnabled)
+                    divider
+                    toggleRow(icon: "mic.fill", title: "Siri & Search", isOn: $siriSearchEnabled)
+                    divider
+                    navigationRow(icon: "accessibility", title: "Accessibility") {
+                        ManagerAccessibilityView()
                     }
                 }
-                .padding()
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white))
-                .shadow(color: .black.opacity(0.05), radius: 14, x: 0, y: 8)
 
-                Button {
-                    session.signOut()
-                } label: {
-                    Text("Sign Out")
-                        .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundColor(.white)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.figmaPrimary))
+                sectionTitle("SECURITY")
+                settingsCard {
+                    navigationRow(icon: "faceid", title: "Biometric Authentication") {
+                        ManagerBiometricSecurityView()
+                    }
+                    divider
+                    navigationRow(icon: "key.fill", title: "Change Passcode") {
+                        ManagerChangePasscodeView()
+                    }
                 }
-                .accessibilityLabel("Sign out of the app")
+
+                sectionTitle("SUPPORT")
+                settingsCard {
+                    navigationRow(icon: "book.fill", title: "User Manual", accent: .hatchOrange) {
+                        ManagerUserManualView()
+                    }
+                    divider
+                    navigationRow(icon: "headphones", title: "Contact Support", accent: .hatchOrange) {
+                        ManagerContactSupportView()
+                    }
+                    divider
+                    navigationRow(icon: "doc.text.fill", title: "Terms of Service", accent: .hatchOrange) {
+                        ManagerTermsView()
+                    }
+                    divider
+                    navigationRow(icon: "shield.lefthalf.filled", title: "Privacy Policy", accent: .hatchOrange) {
+                        ManagerPrivacyView()
+                    }
+                }
+
+                VStack(spacing: 4) {
+                    Text("HatchPlan Pro")
+                        .font(.callout.weight(.medium))
+                        .foregroundColor(.secondary)
+                    Text("v2.4.0")
+                        .font(.footnote)
+                        .foregroundColor(.secondary.opacity(0.8))
+                }
+                .padding(.top, 8)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.top, 18)
+            .padding(.bottom, 28)
         }
-        .background(Color.figmaBackground.ignoresSafeArea())
-        .navigationTitle("Profile")
-        .navigationBarTitleDisplayMode(.inline)
+        .background(Color.hatchSurface.ignoresSafeArea())
+        .navigationBarHidden(true)
     }
-    
-    private func profileRow(label: String, value: String) -> some View {
+
+    private var header: some View {
         HStack {
-            Text(label)
+            Button(action: {}) {
+                Image(systemName: "arrow.left")
+                    .font(.title3.weight(.semibold))
+                    .foregroundColor(.hatchGreen)
+                    .frame(width: 42, height: 42)
+            }
+
+            Spacer()
+
+            Text("Settings")
+                .font(.system(size: 24, weight: .bold, design: .rounded))
+                .foregroundColor(.hatchGreen)
+
+            Spacer()
+
+            Circle()
+                .fill(LinearGradient(colors: [.brown.opacity(0.7), .black.opacity(0.85)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .overlay(Text("M").font(.caption.weight(.bold)).foregroundColor(.white))
+                .frame(width: 42, height: 42)
+        }
+        .padding(.horizontal, 4)
+        .padding(.top, 8)
+    }
+
+    private var profileCard: some View {
+        NavigationLink {
+            ManagerAccountDetailsView()
+                .environmentObject(session)
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: "person.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(.hatchGreen)
+                    .frame(width: 56, height: 56)
+                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.hatchGreenSoft))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.currentRole.shortTitle)
+                        .font(.title3.weight(.semibold))
+                        .foregroundColor(.primary)
+                    Text(session.currentUser.email)
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(18)
+            .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white))
+            .shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 4)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.caption.weight(.bold))
+                .tracking(1.2)
                 .foregroundColor(.secondary)
             Spacer()
-            Text(value)
-                .fontWeight(.semibold)
-                .foregroundColor(.figmaTextDark)
         }
-        .padding(.vertical, 4)
+        .padding(.top, 4)
+    }
+
+    private func settingsCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(spacing: 0) {
+            content()
+        }
+        .padding(0)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(.white))
+        .shadow(color: .black.opacity(0.04), radius: 10, x: 0, y: 4)
+    }
+
+    private func toggleRow(icon: String, title: String, isOn: Binding<Bool>) -> some View {
+        HStack(spacing: 12) {
+            settingsIcon(icon: icon)
+            Text(title)
+                .font(.headline)
+                .foregroundColor(.primary)
+            Spacer()
+            Toggle("", isOn: isOn)
+                .labelsHidden()
+                .tint(.hatchGreen)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+    }
+
+    private func navigationRow<Destination: View>(icon: String,
+                                                   title: String,
+                                                   accent: Color = .hatchGreen,
+                                                   @ViewBuilder destination: () -> Destination) -> some View {
+        NavigationLink {
+            destination()
+        } label: {
+            HStack(spacing: 12) {
+                settingsIcon(icon: icon, accent: accent)
+                Text(title)
+                    .font(.headline)
+                    .foregroundColor(.primary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundColor(.secondary.opacity(0.6))
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func settingsIcon(icon: String, accent: Color = .hatchGreen) -> some View {
+        Image(systemName: icon)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(accent)
+            .frame(width: 34, height: 34)
+            .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(accent.opacity(0.12)))
+    }
+
+    private var divider: some View {
+        Divider().padding(.leading, 62)
+    }
+}
+
+#Preview {
+    NavigationStack {
+        ManagerSettingsView()
+            .environmentObject(AppSessionViewModel())
     }
 }
