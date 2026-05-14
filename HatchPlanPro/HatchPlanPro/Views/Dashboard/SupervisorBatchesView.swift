@@ -1,15 +1,8 @@
-//
-//  SupervisorBatchesView.swift
-//  HatchPlanPro
-//
-//  Created by GitHub Copilot on 2026-05-12.
-//
-
 import SwiftUI
 
 struct SupervisorBatchesView: View {
     @EnvironmentObject private var session: AppSessionViewModel
-    @State private var selectedStatus = "all"
+    @StateObject private var viewModel = SupervisorBatchesViewModel()
 
     var body: some View {
         NavigationStack {
@@ -30,20 +23,15 @@ struct SupervisorBatchesView: View {
                     // MARK: - Approved & Ready
                     batchSection(
                         title: "APPROVED & READY",
-                        count: "2 Items",
-                        batches: [
-                            (id: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen),
-                            (id: "#B1028", breed: "Cobb 500", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen)
-                        ]
+                        count: "\(viewModel.approvedBatches.count) Items",
+                        batches: viewModel.approvedBatches
                     )
 
                     // MARK: - Pending Manager Review
                     batchSection(
                         title: "PENDING MANAGER REVIEW",
-                        count: "1 Item",
-                        batches: [
-                            (id: "#B1029", breed: "Ross 708", date: "Oct 24, 2023", status: "PENDING", statusColor: Color(hex: "#FFA500"))
-                        ]
+                        count: "\(viewModel.pendingBatches.count) Items",
+                        batches: viewModel.pendingBatches
                     )
 
                     // MARK: - Rejected / Action Required
@@ -53,49 +41,51 @@ struct SupervisorBatchesView: View {
                                 .font(.caption.weight(.bold))
                                 .kerning(1)
                             Spacer()
-                            Text("1 Item")
+                            Text("\(viewModel.rejectedBatches.count) Items")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
 
                         VStack(spacing: 12) {
-                            HStack(alignment: .top, spacing: 12) {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("#B1022")
-                                        .font(.headline)
-                                    Text("Lohmann Brown")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                    Text("Oct 24, 2023")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
+                            ForEach(viewModel.rejectedBatches) { item in
+                                HStack(alignment: .top, spacing: 12) {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(item.id)
+                                            .font(.headline)
+                                        Text(item.breed)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                        Text(item.date)
+                                            .font(.caption2)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    Text(item.status)
+                                        .font(.caption2.weight(.bold))
+                                        .kerning(0.8)
+                                        .foregroundColor(.white)
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 10)
+                                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(item.statusColor))
                                 }
-                                Spacer()
-                                Text("REJECTED")
-                                    .font(.caption2.weight(.bold))
-                                    .kerning(0.8)
-                                    .foregroundColor(.white)
-                                    .padding(.vertical, 4)
-                                    .padding(.horizontal, 10)
-                                    .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color(hex: "#FF6B6B")))
-                            }
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
+                                .padding()
+                                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
 
-                            HStack(spacing: 12) {
-                                Image(systemName: "exclamationmark.circle.fill")
-                                    .foregroundColor(.red)
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("Target temperature too high for breed specification. Update and resubmit.")
-                                        .font(.caption)
+                                HStack(spacing: 12) {
+                                    Image(systemName: "exclamationmark.circle.fill")
                                         .foregroundColor(.red)
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text("Target temperature too high for breed specification. Update and resubmit.")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
+                                    Spacer()
+                                    Image(systemName: "plus.circle.fill")
+                                        .foregroundColor(.hatchGreen)
                                 }
-                                Spacer()
-                                Image(systemName: "plus.circle.fill")
-                                    .foregroundColor(.hatchGreen)
+                                .padding()
+                                .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#FAFAFA")))
                             }
-                            .padding()
-                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#FAFAFA")))
                         }
                     }
                     .padding(16)
@@ -106,10 +96,8 @@ struct SupervisorBatchesView: View {
                     // MARK: - Calendar Synced
                     batchSection(
                         title: "CALENDAR SYNCED",
-                        count: "1 Item",
-                        batches: [
-                            (id: "#B1020", breed: "Hubbard Efficiency Plus", date: "Oct 24, 2023", status: "SYNCED", statusColor: .hatchGreen)
-                        ]
+                        count: "\(viewModel.syncedBatches.count) Items",
+                        batches: viewModel.syncedBatches
                     )
 
                     // MARK: - Supervisor Insight
@@ -118,14 +106,14 @@ struct SupervisorBatchesView: View {
                             .font(.caption.weight(.bold))
                             .kerning(1)
                             .foregroundColor(.white)
-                        Text("Hatchery efficiency is up 4.2% this week.")
+                        Text("Hatchery efficiency is up \(String(format: "%.1f", viewModel.efficiencyIncrease))% this week.")
                             .font(.title2.bold())
                             .foregroundColor(.white)
                         HStack(spacing: 8) {
                             Image(systemName: "person.crop.circle.fill")
                                 .font(.caption)
                                 .foregroundColor(.hatchGreen)
-                            Text("Reviews by Manager Sarah & Ops Lead Mike")
+                            Text(viewModel.reviewMessage)
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -140,10 +128,13 @@ struct SupervisorBatchesView: View {
             .background(Color.hatchSurface.ignoresSafeArea())
             .navigationTitle("Hatchery Insights")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                viewModel.loadData(from: session)
+            }
         }
     }
 
-    private func batchSection(title: String, count: String, batches: [(id: String, breed: String, date: String, status: String, statusColor: Color)]) -> some View {
+    private func batchSection(title: String, count: String, batches: [SupervisorBatchInsight]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(title)
@@ -156,13 +147,13 @@ struct SupervisorBatchesView: View {
             }
 
             VStack(spacing: 10) {
-                ForEach(batches.indices, id: \.self) { index in
-                    let item = batches[index]
+                ForEach(batches) { item in
                     NavigationLink(destination: BatchDetailView(batchID: item.id, breed: item.breed, date: item.date, status: item.status, statusColor: item.statusColor).environmentObject(session)) {
                         HStack(alignment: .center, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.id)
                                     .font(.headline)
+                                    .foregroundColor(.primary)
                                 Text(item.breed)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -184,6 +175,7 @@ struct SupervisorBatchesView: View {
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
                     }
+                }
             }
         }
         .padding(16)
@@ -191,9 +183,4 @@ struct SupervisorBatchesView: View {
         .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
         .padding(.horizontal, 16)
     }
-}
-
-#Preview {
-    SupervisorBatchesView()
-        .environmentObject(AppSessionViewModel())
 }

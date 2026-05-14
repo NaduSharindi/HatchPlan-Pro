@@ -1,14 +1,8 @@
-//
-//  SupervisorHistoryView.swift
-//  HatchPlanPro
-//
-//  Created by GitHub Copilot on 2026-05-12.
-//
-
 import SwiftUI
 
 struct SupervisorHistoryView: View {
     @EnvironmentObject private var session: AppSessionViewModel
+    @StateObject private var viewModel = SupervisorHistoryViewModel()
 
     var body: some View {
         NavigationStack {
@@ -40,10 +34,10 @@ struct SupervisorHistoryView: View {
 
                             HStack(alignment: .top, spacing: 20) {
                                 VStack(alignment: .leading, spacing: 6) {
-                                    Text("92.4%")
+                                    Text("\(String(format: "%.1f", viewModel.averageHatchRate * 100))%")
                                         .font(.system(size: 38, weight: .bold))
                                         .foregroundColor(.hatchGreen)
-                                    ProgressView(value: 0.924)
+                                    ProgressView(value: viewModel.averageHatchRate)
                                         .tint(.hatchGreen)
                                         .frame(width: 120)
                                 }
@@ -53,7 +47,7 @@ struct SupervisorHistoryView: View {
                                         .font(.caption.weight(.bold))
                                         .kerning(1)
                                         .foregroundColor(.secondary)
-                                    Text("142")
+                                    Text("\(viewModel.totalBatches)")
                                         .font(.title2.bold())
                                         .foregroundColor(.hatchGreen)
                                 }
@@ -65,24 +59,10 @@ struct SupervisorHistoryView: View {
                     .supervisorCard()
                     .padding(.horizontal, 16)
 
-                    // MARK: - October 2023
-                    batchHistoryMonth(
-                        title: "OCTOBER 2023",
-                        batches: [
-                            (id: "#B2023-10-A", date: "Completed Oct 28, 2023", rate: "94.5%"),
-                            (id: "#B2023-10-B", date: "Completed Oct 24, 2023", rate: "91.2%"),
-                            (id: "#B2023-10-C", date: "Completed Oct 19, 2023", rate: "88.4%")
-                        ]
-                    )
-
-                    // MARK: - September 2023
-                    batchHistoryMonth(
-                        title: "SEPTEMBER 2023",
-                        batches: [
-                            (id: "#B2023-09-E", date: "Completed Sep 30, 2023", rate: "93.8%"),
-                            (id: "#B2023-09-D", date: "Completed Sep 22, 2023", rate: "95.1%")
-                        ]
-                    )
+                    // MARK: - Monthly History
+                    ForEach(viewModel.monthlyHistory) { month in
+                        batchHistoryMonth(title: month.title, batches: month.batches)
+                    }
 
                     // MARK: - Load Older
                     Button(action: {}) {
@@ -101,28 +81,31 @@ struct SupervisorHistoryView: View {
             .background(Color.hatchSurface.ignoresSafeArea())
             .navigationTitle("Batch History")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                viewModel.loadData(from: session)
+            }
         }
     }
 
-    private func batchHistoryMonth(title: String, batches: [(id: String, date: String, rate: String)]) -> some View {
+    private func batchHistoryMonth(title: String, batches: [BatchHistoryItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(title)
                 .font(.caption.weight(.bold))
                 .kerning(1)
 
             VStack(spacing: 10) {
-                ForEach(batches.indices, id: \.self) { index in
+                ForEach(batches) { batch in
                     HStack(spacing: 12) {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text(batches[index].id)
+                            Text(batch.id)
                                 .font(.headline)
                                 .foregroundColor(.hatchGreen)
-                            Text(batches[index].date)
+                            Text(batch.date)
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
                         Spacer()
-                        Text(batches[index].rate)
+                        Text(batch.rate)
                             .font(.headline)
                             .foregroundColor(.hatchGreen)
                         Image(systemName: "chevron.right")
@@ -136,9 +119,4 @@ struct SupervisorHistoryView: View {
         .supervisorCard()
         .padding(.horizontal, 16)
     }
-}
-
-#Preview {
-    SupervisorHistoryView()
-        .environmentObject(AppSessionViewModel())
 }

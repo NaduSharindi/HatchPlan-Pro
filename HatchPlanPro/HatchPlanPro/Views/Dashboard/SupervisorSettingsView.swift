@@ -1,17 +1,8 @@
-//
-//  SupervisorSettingsView.swift
-//  HatchPlanPro
-//
-//  Created by GitHub Copilot on 2026-05-12.
-//
-
 import SwiftUI
 
 struct SupervisorSettingsView: View {
     @EnvironmentObject private var session: AppSessionViewModel
-    @State private var notificationsEnabled = true
-    @State private var hapticEnabled = true
-    @State private var siriEnabled = true
+    @StateObject private var viewModel = SupervisorSettingsViewModel()
 
     var body: some View {
         NavigationStack {
@@ -39,10 +30,10 @@ struct SupervisorSettingsView: View {
                                 .background(Circle().fill(Color.hatchGreenSoft))
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Supervisor")
+                                Text(viewModel.roleTitle)
                                     .font(.headline)
                                     .foregroundColor(.hatchGreen)
-                                Text("lead.agronomist@hatchplan.pro")
+                                Text(viewModel.email)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
                             }
@@ -60,9 +51,9 @@ struct SupervisorSettingsView: View {
                             .font(.caption.weight(.bold))
                             .kerning(1)
 
-                        settingRow(icon: "bell.fill", title: "System Notifications", enabled: $notificationsEnabled)
-                        settingRow(icon: "iphone.gen1.radiowaves.left.and.right", title: "Haptic Feedback", enabled: $hapticEnabled)
-                        settingRow(icon: "waveform.mic", title: "Siri & Search", enabled: $siriEnabled)
+                        settingRow(icon: "bell.fill", title: "System Notifications", enabled: $viewModel.notificationsEnabled)
+                        settingRow(icon: "iphone.gen1.radiowaves.left.and.right", title: "Haptic Feedback", enabled: $viewModel.hapticEnabled)
+                        settingRow(icon: "waveform.mic", title: "Siri & Search", enabled: $viewModel.siriEnabled)
                         
                         NavigationLink(destination: SupervisorAccessibilityView()) {
                             settingRowStatic(icon: "figure.dress", title: "Accessibility")
@@ -108,6 +99,17 @@ struct SupervisorSettingsView: View {
                     }
                     .supervisorCard()
                     .padding(.horizontal, 16)
+                    
+                    // MARK: - Logout
+                    Button(action: { session.signOut() }) {
+                        Text("Sign Out")
+                            .font(.headline)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.red.opacity(0.1)))
+                    }
+                    .padding(.horizontal, 16)
 
                     // MARK: - Footer
                     VStack(spacing: 4) {
@@ -124,6 +126,9 @@ struct SupervisorSettingsView: View {
             .background(Color.hatchSurface.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                viewModel.loadData(from: session)
+            }
         }
     }
 
@@ -189,112 +194,11 @@ struct SupervisorSettingsView: View {
     }
 }
 
-struct SupervisorAccessibilityView: View {
-    var body: some View {
-        VStack {
-            Text("Accessibility Settings")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Accessibility")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorBiometricSettingsView: View {
-    var body: some View {
-        VStack {
-            Text("Biometric Settings")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Biometric Authentication")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorChangePasscodeView: View {
-    var body: some View {
-        VStack {
-            Text("Change Passcode")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Change Passcode")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorUserManualView: View {
-    var body: some View {
-        VStack {
-            Text("User Manual")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("User Manual")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorContactSupportView: View {
-    var body: some View {
-        VStack {
-            Text("Contact Support")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Contact Support")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorTermsView: View {
-    var body: some View {
-        VStack {
-            Text("Terms of Service")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Terms of Service")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-struct SupervisorPrivacyView: View {
-    var body: some View {
-        VStack {
-            Text("Privacy Policy")
-                .font(.title2.bold())
-                .foregroundColor(.hatchGreen)
-            Spacer()
-        }
-        .padding()
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("Privacy Policy")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-}
-
-#Preview {
-    SupervisorSettingsView()
-        .environmentObject(AppSessionViewModel())
-}
+// Stubs for navigation
+struct SupervisorAccessibilityView: View { var body: some View { Text("Accessibility Settings").padding() } }
+struct SupervisorBiometricSettingsView: View { var body: some View { Text("Biometric Settings").padding() } }
+struct SupervisorChangePasscodeView: View { var body: some View { Text("Change Passcode").padding() } }
+struct SupervisorUserManualView: View { var body: some View { Text("User Manual").padding() } }
+struct SupervisorContactSupportView: View { var body: some View { Text("Contact Support").padding() } }
+struct SupervisorTermsView: View { var body: some View { Text("Terms of Service").padding() } }
+struct SupervisorPrivacyView: View { var body: some View { Text("Privacy Policy").padding() } }

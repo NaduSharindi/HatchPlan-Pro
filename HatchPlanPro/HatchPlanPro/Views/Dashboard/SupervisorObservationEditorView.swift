@@ -22,7 +22,7 @@ struct SupervisorObservationEditorView: View {
     init(batch: ScheduledBatch, existingObservation: SupervisorObservation?) {
         self.batch = batch
         self.existingObservation = existingObservation
-        _selectedCategory = State(initialValue: existingObservation?.category ?? .shellQuality)
+        _selectedCategory = State(initialValue: existingObservation.flatMap { ObservationCategory(rawValue: $0.category) } ?? .shellQuality)
         _noteText = State(initialValue: existingObservation?.note ?? "")
         _attachedPhotos = State(initialValue: existingObservation?.attachedPhotos ?? [])
     }

@@ -1,14 +1,8 @@
-//
-//  SupervisorHomeView.swift
-//  HatchPlanPro
-//
-//  Created by GitHub Copilot on 2026-05-12.
-//
-
 import SwiftUI
 
 struct SupervisorHomeView: View {
     @EnvironmentObject private var session: AppSessionViewModel
+    @StateObject private var viewModel = SupervisorDashboardViewModel()
     @State private var syncMessage = "Ready"
 
     var body: some View {
@@ -18,7 +12,7 @@ struct SupervisorHomeView: View {
                     // MARK: - Header
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Good Morning, \(session.currentUser.fullName.split(separator: " ").first ?? "Supervisor")")
+                            Text("Good Morning, \(viewModel.fullName)")
                                 .font(.title2.bold())
                                 .foregroundColor(.hatchGreen)
                             Text("Meegoda Hatchery")
@@ -172,11 +166,11 @@ struct SupervisorHomeView: View {
                         HStack {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text("PREDICTED YIELD").font(.caption2.weight(.bold)).kerning(0.8)
-                                ProgressView(value: 0.82)
+                                ProgressView(value: viewModel.yieldPrediction)
                                     .tint(.hatchGreen)
                             }
                             VStack(alignment: .trailing, spacing: 4) {
-                                Text("82% OVERALL").font(.caption2.weight(.bold)).kerning(0.8).foregroundColor(.hatchGreen)
+                                Text("\(Int(viewModel.yieldPrediction * 100))% OVERALL").font(.caption2.weight(.bold)).kerning(0.8).foregroundColor(.hatchGreen)
                             }
                         }
                     }
@@ -203,6 +197,9 @@ struct SupervisorHomeView: View {
                 }
                 .padding(.trailing, 20)
                 .padding(.bottom, 20)
+            }
+            .onAppear {
+                viewModel.loadData(from: session)
             }
         }
     }
@@ -237,9 +234,9 @@ struct SupervisorHomeView: View {
                     .background(Circle().fill(tagColor.opacity(0.15)))
             } else {
                 Image(systemName: "calendar.fill")
-                    .foregroundColor(.hatchGreen)
-                    .padding(8)
-                    .background(Circle().fill(Color.hatchGreenSoft))
+                .foregroundColor(.hatchGreen)
+                .padding(8)
+                .background(Circle().fill(Color.hatchGreenSoft))
             }
 
             VStack(alignment: .leading, spacing: 2) {
@@ -262,9 +259,4 @@ struct SupervisorHomeView: View {
         .padding()
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
     }
-}
-
-#Preview {
-    SupervisorHomeView()
-        .environmentObject(AppSessionViewModel())
 }

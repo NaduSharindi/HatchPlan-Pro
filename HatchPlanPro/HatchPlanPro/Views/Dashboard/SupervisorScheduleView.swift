@@ -1,40 +1,8 @@
-//
-//  SupervisorScheduleView.swift
-//  HatchPlanPro
-//
-//  Created by GitHub Copilot on 2026-05-13.
-//
-
 import SwiftUI
 
 struct SupervisorScheduleView: View {
     @EnvironmentObject private var session: AppSessionViewModel
-    @State private var searchText = ""
-
-    var filteredSchedules: [ScheduledBatch] {
-        if searchText.isEmpty {
-            return session.scheduledBatches
-        }
-        return session.scheduledBatches.filter { batch in
-            batch.batchID.localizedCaseInsensitiveContains(searchText) ||
-            batch.breed.localizedCaseInsensitiveContains(searchText)
-        }
-    }
-
-    var groupedSchedules: [(date: String, batches: [ScheduledBatch])] {
-        let grouped = Dictionary(grouping: filteredSchedules) { $0.dateLabel }
-        return grouped.sorted { date1, date2 in
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMMM d"
-            if let d1 = dateFormatter.date(from: date1.key),
-               let d2 = dateFormatter.date(from: date2.key) {
-                return d1 < d2
-            }
-            return date1.key < date2.key
-        }.map { (key, value) in
-            (date: key, batches: value.sorted { $0.timeLabel < $1.timeLabel })
-        }
-    }
+    @StateObject private var viewModel = SupervisorScheduleViewModel()
 
     var body: some View {
         NavigationStack {
@@ -47,7 +15,7 @@ struct SupervisorScheduleView: View {
                         HStack(spacing: 12) {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.secondary)
-                            TextField("Search batches or breed type...", text: $searchText)
+                            TextField("Search batches or breed type...", text: $viewModel.searchText)
                                 .textFieldStyle(.plain)
                         }
                         .padding(14)
@@ -57,7 +25,7 @@ struct SupervisorScheduleView: View {
 
                         // MARK: - Scheduled Batches by Date
                         VStack(alignment: .leading, spacing: 20) {
-                            ForEach(groupedSchedules, id: \.date) { dateGroup in
+                            ForEach(viewModel.groupedSchedules, id: \.date) { dateGroup in
                                 VStack(alignment: .leading, spacing: 12) {
                                     // Date Header
                                     Text(dateGroup.date.uppercased())
@@ -87,16 +55,16 @@ struct SupervisorScheduleView: View {
                                 .kerning(1)
                                 .foregroundColor(.white)
 
-                            Text(session.efficiencyForecast.title)
+                            Text(viewModel.efficiencyForecastTitle)
                                 .font(.title2.bold())
                                 .foregroundColor(.white)
 
                             HStack(spacing: 12) {
-                                ProgressView(value: session.efficiencyForecast.percentage)
+                                ProgressView(value: viewModel.efficiencyForecastPercentage)
                                     .tint(Color(hex: "#FFD700"))
                                     .frame(height: 6)
 
-                                Text(String(format: "%.0f%%", session.efficiencyForecast.percentage * 100))
+                                Text(String(format: "%.0f%%", viewModel.efficiencyForecastPercentage * 100))
                                     .font(.caption.weight(.semibold))
                                     .foregroundColor(.white)
                             }
@@ -115,6 +83,10 @@ struct SupervisorScheduleView: View {
             .navigationBarBackButtonHidden(false)
             .onAppear {
                 session.fetchScheduledBatches()
+                viewModel.loadData(from: session)
+            }
+            .onChange(of: session.scheduledBatches) { _ in
+                viewModel.loadData(from: session)
             }
         }
     }
@@ -168,9 +140,4 @@ struct SupervisorScheduleView: View {
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white))
         .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
     }
-}
-
-#Preview {
-    SupervisorScheduleView()
-        .environmentObject(AppSessionViewModel())
 }

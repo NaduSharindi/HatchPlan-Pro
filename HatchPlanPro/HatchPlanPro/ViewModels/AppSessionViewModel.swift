@@ -99,7 +99,7 @@ final class AppSessionViewModel: ObservableObject {
                     HatchTimelineStep(title: "Final Hatch Completion", detail: "Day 21: Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
                 ],
                 observations: [
-                    SupervisorObservation(category: .shellQuality, note: "Egg weight loss trending at 11.2%. Batch #B7-902 is slightly ahead of schedule. Ventilator intake adjusted +5% to compensate for metabolic heat.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+                    SupervisorObservation(category: ObservationCategory.shellQuality.rawValue, note: "Egg weight loss trending at 11.2%. Batch #B7-902 is slightly ahead of schedule. Ventilator intake adjusted +5% to compensate for metabolic heat.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
                 ],
                 eggSetDate: "Oct 20, 2023",
                 hatchDate: "Nov 10, 2023",
@@ -155,7 +155,7 @@ final class AppSessionViewModel: ObservableObject {
                 HatchTimelineStep(title: "Final Hatch Completion", detail: "Pulling and quality assessment.", timeLabel: "UPCOMING", state: "upcoming")
             ],
             observations: [
-                SupervisorObservation(category: .generalNote, note: "Batch monitoring continues with stable readings.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
+                SupervisorObservation(category: ObservationCategory.generalNote.rawValue, note: "Batch monitoring continues with stable readings.", authorName: "Dr. Adrian Miller", authorRole: "HEAD SUPERVISOR", timeLabel: "08:15 AM TODAY", attachedPhotos: ["observation_1", "observation_2", "observation_3", "observation_4"])
             ],
             eggSetDate: "Oct 20, 2023",
             hatchDate: "Nov 10, 2023",
@@ -445,7 +445,7 @@ final class AppSessionViewModel: ObservableObject {
 
         var updatedObservations = currentSnapshot.observations
         let newObservation = SupervisorObservation(
-            category: category,
+            category: category.rawValue,
             note: note,
             authorName: currentUser.fullName,
             authorRole: currentUser.role.shortTitle.uppercased(),
