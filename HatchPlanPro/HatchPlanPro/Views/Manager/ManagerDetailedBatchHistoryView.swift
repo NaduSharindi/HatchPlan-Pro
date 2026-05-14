@@ -243,10 +243,6 @@ struct ManagerDetailedBatchHistoryView: View {
     }
 }
 
-struct MapPin: Identifiable {
-    let id = UUID()
-    var coordinate: CLLocationCoordinate2D
-}
 
 #Preview {
     ManagerDetailedBatchHistoryView(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen)
