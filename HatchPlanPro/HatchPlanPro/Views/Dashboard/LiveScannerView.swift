@@ -8,6 +8,7 @@
 import SwiftUI
 import AVFoundation
 import Vision
+import Combine
 
 struct LiveScannerView: View {
     @Environment(\.dismiss) var dismiss
