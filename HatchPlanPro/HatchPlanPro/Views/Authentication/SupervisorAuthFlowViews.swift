@@ -166,10 +166,12 @@ struct SupervisorLoginView: View {
                         .foregroundColor(.hatchGreen)
                         .padding(18)
                         .background(Circle().fill(Color.hatchGreenSoft))
+                        .accessibilityHidden(true)
 
                     Text("HatchPlan Pro")
                         .font(.system(size: 26, weight: .bold, design: .rounded))
                         .foregroundColor(.hatchGreen)
+                        .accessibilityAddTraits(.isHeader)
                     Text("Precision poultry management")
                         .font(.caption.weight(.semibold))
                         .kerning(2.2)
@@ -182,37 +184,66 @@ struct SupervisorLoginView: View {
                     TextField("nadunika@primahatchery.com", text: $email)
                         .textInputAutocapitalization(.never)
                         .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Email address")
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
                     Text("PASSWORD").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
                     SecureField("••••••••", text: $password)
+                        .textContentType(.password)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Password")
+                }
+
+                // Error display
+                if session.showAuthError, let errorMsg = session.authErrorMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
+                        Text(errorMsg).font(.caption).foregroundColor(.red).lineLimit(3)
+                    }
+                    .accessibilityElement(children: .combine)
                 }
 
                 Button {
                     session.chooseRole(.supervisor)
-                    session.recordCredentials(email: email)
-                    goToBiometrics = true
+                    // Use Firebase Auth for real sign-in
+                    session.firebaseSignIn(email: email, password: password) { success in
+                        if success {
+                            goToBiometrics = true
+                        }
+                    }
                 } label: {
-                    Text("Sign In")
-                        .font(.headline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .foregroundColor(.white)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
+                    HStack {
+                        if session.isLoadingAuth {
+                            ProgressView().tint(.white)
+                        }
+                        Text("Sign In")
+                            .font(.headline.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
+                .disabled(email.isEmpty || password.isEmpty || session.isLoadingAuth)
+                .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
+                .accessibilityLabel("Sign in")
 
                 Button {
+                    // Biometric-only sign in (requires existing session)
+                    session.chooseRole(.supervisor)
+                    session.recordCredentials(email: email)
                     goToBiometrics = true
                 } label: {
                     Text("Sign In with Biometrics")
                         .font(.subheadline.weight(.semibold))
                         .foregroundColor(.hatchGreen)
                 }
+                .accessibilityLabel("Sign in with biometrics")
 
                 NavigationLink(destination: SupervisorBiometricIntroView(), isActive: $goToBiometrics) {
                     EmptyView()
@@ -233,8 +264,13 @@ struct SupervisorLoginView: View {
         }
         .background(Color.hatchSurface.ignoresSafeArea())
         .navigationBarHidden(true)
+        .onDisappear {
+            session.showAuthError = false
+            session.authErrorMessage = nil
+        }
     }
 }
+
 
 struct SupervisorBiometricIntroView: View {
     @EnvironmentObject private var session: AppSessionViewModel

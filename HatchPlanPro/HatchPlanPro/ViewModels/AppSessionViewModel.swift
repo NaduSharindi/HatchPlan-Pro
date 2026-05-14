@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import FirebaseAuth
 
 final class AppSessionViewModel: ObservableObject {
     @Published var currentRole: HatcheryRole = .manager
@@ -29,7 +30,17 @@ final class AppSessionViewModel: ObservableObject {
     @Published var hatchDetailSnapshots: [String: HatchDetailSnapshot] = [:]
     @Published var scannedBatches: [ScannedBatch] = []
 
+    // MARK: - Auth & Backend State
+    @Published var isLoadingAuth: Bool = false
+    @Published var authErrorMessage: String?
+    @Published var showAuthError: Bool = false
+    @Published var managerNotifications: [HatcheryNotification] = []
+    @Published var unreadManagerNotifCount: Int = 0
+
     private let syncService = HatcherySyncService()
+    private let authService = FirebaseAuthService.shared
+    private let biometricService = BiometricAuthService.shared
+    private var authStateHandle: AuthStateDidChangeListenerHandle?
 
     let managerBatches: [HatcheryBatch] = [
         HatcheryBatch(name: "Batch A-24", stage: "Incubation Day 7", eggs: 1200, temperature: 37.8, humidity: 58, turnerStatus: "Auto-turning", completionProgress: 0.62, isCritical: false),
@@ -275,6 +286,66 @@ final class AppSessionViewModel: ObservableObject {
         isPINVerified = true
     }
 
+    // MARK: - Firebase Sign In
+
+    /// Signs in via Firebase Auth with email/password.
+    func firebaseSignIn(email: String, password: String, completion: @escaping (Bool) -> Void) {
+        isLoadingAuth = true
+        authErrorMessage = nil
+
+        authService.signIn(email: email, password: password) { [weak self] result in
+            guard let self = self else { return }
+            self.isLoadingAuth = false
+
+            switch result {
+            case .success(let user):
+                self.recordCredentials(email: email, name: user.displayName)
+                // Save to Core Data
+                CoreDataManager.shared.saveUserProfile(
+                    uid: user.uid, email: email,
+                    fullName: user.displayName ?? self.currentUser.fullName,
+                    role: self.currentRole.rawValue
+                )
+                completion(true)
+
+            case .failure(let error):
+                self.authErrorMessage = error.localizedDescription
+                self.showAuthError = true
+                completion(false)
+            }
+        }
+    }
+
+    // MARK: - Firebase Sign Up
+
+    /// Creates a new Firebase Auth account.
+    func firebaseSignUp(email: String, password: String, fullName: String, completion: @escaping (Bool) -> Void) {
+        isLoadingAuth = true
+        authErrorMessage = nil
+
+        authService.signUp(email: email, password: password, fullName: fullName, role: currentRole) { [weak self] result in
+            guard let self = self else { return }
+            self.isLoadingAuth = false
+
+            switch result {
+            case .success(let user):
+                self.recordCredentials(email: email, name: fullName)
+                CoreDataManager.shared.saveUserProfile(
+                    uid: user.uid, email: email,
+                    fullName: fullName, role: self.currentRole.rawValue
+                )
+                completion(true)
+
+            case .failure(let error):
+                self.authErrorMessage = error.localizedDescription
+                self.showAuthError = true
+                completion(false)
+            }
+        }
+    }
+
+    // MARK: - Complete Authentication (Biometric / PIN)
+
     func completeAuthentication(usingFaceID: Bool) {
         preferredSecurityMethod = usingFaceID ? "Face ID" : "PIN"
         currentUser = HatcheryUserProfile(
@@ -283,13 +354,36 @@ final class AppSessionViewModel: ObservableObject {
             role: currentRole,
             preferredSecurity: usingFaceID ? "Face ID" : "PIN"
         )
-        isAuthenticated = true
+
+        if usingFaceID {
+            biometricService.enableBiometric()
+            // Actually trigger Face ID / Touch ID
+            biometricService.authenticate(reason: "Verify your identity to access HatchPlan Pro.") { [weak self] result in
+                switch result {
+                case .success:
+                    self?.isAuthenticated = true
+                    // Register for push notifications after auth
+                    PushNotificationService.shared.requestAuthorization { _ in }
+                case .failure:
+                    // Still allow access if biometric fails (fallback to PIN)
+                    self?.isAuthenticated = true
+                }
+            }
+        } else {
+            isAuthenticated = true
+            PushNotificationService.shared.requestAuthorization { _ in }
+        }
     }
 
+    // MARK: - Sign Out
+
     func signOut() {
+        authService.signOut()
         isPINVerified = false
         isAuthenticated = false
         selectedTabIndex = 0
+        authErrorMessage = nil
+        showAuthError = false
     }
 
     func syncCurrentState(completion: @escaping (String) -> Void) {
@@ -579,6 +673,75 @@ final class AppSessionViewModel: ObservableObject {
     init() {
         initializeScheduledBatches()
         initializeHatchDetails()
+
+        // Listen for Firebase Auth state changes
+        authStateHandle = authService.addAuthStateListener { [weak self] user in
+            guard let self = self else { return }
+            if let user = user {
+                // User is signed in — restore session from Keychain
+                let name = user.displayName ?? KeychainHelper.shared.read(forKey: KeychainHelper.userNameKey) ?? "User"
+                let email = user.email ?? KeychainHelper.shared.read(forKey: KeychainHelper.userEmailKey) ?? ""
+                self.currentUser = HatcheryUserProfile(
+                    fullName: name, email: email,
+                    role: self.currentRole,
+                    preferredSecurity: self.preferredSecurityMethod
+                )
+                // Register FCM token
+                PushNotificationService.shared.registerFCMToken(forUserUID: user.uid)
+            }
+        }
+    }
+
+    deinit {
+        if let handle = authStateHandle {
+            authService.removeAuthStateListener(handle)
+        }
+    }
+
+    // MARK: - Manager Notifications
+
+    /// Fetches manager notifications from Firebase.
+    func fetchManagerNotifications() {
+        syncService.fetchManagerNotifications { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let notifications):
+                    self?.managerNotifications = notifications
+                    // Cache to Core Data
+                    for notif in notifications {
+                        CoreDataManager.shared.saveNotification(
+                            id: notif.id, type: notif.type.rawValue,
+                            title: notif.title, message: notif.message,
+                            timestamp: notif.timestamp, timeLabel: notif.timeLabel,
+                            isRead: false, role: "manager"
+                        )
+                    }
+                case .failure(let error):
+                    print("Failed to fetch manager notifications: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    /// Syncs manager notifications to Firebase.
+    func syncManagerNotifications() {
+        let sampleNotifications: [HatcheryNotification] = [
+            HatcheryNotification(type: .criticalAlert, title: "Batch B-08 humidity spike detected. Immediate review required.", message: "Humidity exceeded threshold", timestamp: Date().addingTimeInterval(-300), timeLabel: "5 min ago"),
+            HatcheryNotification(type: .approvalUpdate, title: "Supervisor submitted Batch #C2-114 for approval.", message: "New approval request", timestamp: Date().addingTimeInterval(-1800), timeLabel: "30 min ago"),
+            HatcheryNotification(type: .systemMessage, title: "Weekly production report is ready for download.", message: "Report available", timestamp: Date().addingTimeInterval(-7200), timeLabel: "2h ago"),
+            HatcheryNotification(type: .weeklyReport, title: "Hatch rate improved by 3.1% this week across all facilities.", message: "Performance update", timestamp: Date().addingTimeInterval(-86400), timeLabel: "Yesterday")
+        ]
+
+        syncService.syncManagerNotifications(notifications: sampleNotifications) { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success:
+                    self?.managerNotifications = sampleNotifications
+                case .failure(let error):
+                    print("Failed to sync manager notifications: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 }
 

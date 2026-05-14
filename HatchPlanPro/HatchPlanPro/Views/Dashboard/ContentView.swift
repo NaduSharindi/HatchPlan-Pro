@@ -71,11 +71,17 @@ struct ContentView: View {
                     }
                     .tag(2)
 
+                ManagerNotificationsView()
+                    .tabItem {
+                        Label("Alerts", systemImage: "bell.fill")
+                    }
+                    .tag(3)
+
                 ManagerSettingsView()
                     .tabItem {
                         Label("Settings", systemImage: "gearshape.fill")
                     }
-                    .tag(3)
+                    .tag(4)
             }
             .tint(.hatchGreen)
             .toolbarBackground(.visible, for: .tabBar)

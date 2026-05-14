@@ -39,12 +39,14 @@ struct OnboardingView: View {
                                 .frame(width: 150, height: 150)
                                 .foregroundColor(.figmaPrimary)
                                 .padding(.bottom, 30)
+                                .accessibilityHidden(true)
                             
                             Text(pages[index].title)
                                 .font(.title)
                                 .fontWeight(.bold)
                                 .foregroundColor(.figmaTextDark)
                                 .multilineTextAlignment(.center)
+                                .accessibilityAddTraits(.isHeader)
                             
                             Text(pages[index].description)
                                 .font(.body)
@@ -54,6 +56,7 @@ struct OnboardingView: View {
                             
                             Spacer()
                         }
+                        .accessibilityElement(children: .combine)
                         .tag(index)
                     }
                 }
@@ -93,6 +96,8 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, 24)
                 .padding(.bottom, 40)
+                .accessibilityLabel(currentPage == pages.count - 1 ? "Get started" : "Next page")
+                .accessibilityHint(currentPage == pages.count - 1 ? "Completes onboarding and opens the app" : "Goes to the next onboarding page")
             }
         }
     }

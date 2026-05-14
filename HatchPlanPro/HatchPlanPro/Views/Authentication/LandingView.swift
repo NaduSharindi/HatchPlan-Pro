@@ -29,11 +29,13 @@ struct LandingView: View {
                             .scaledToFit()
                             .frame(width: 80, height: 80)
                             .foregroundColor(.figmaPrimary)
+                            .accessibilityHidden(true)
                         
                         Text("HatchPlan Pro")
                             .font(.largeTitle)
                             .fontWeight(.bold)
                             .foregroundColor(.figmaTextDark)
+                            .accessibilityAddTraits(.isHeader)
                         
                         Text("Select your role to continue")
                             .font(.subheadline)
@@ -47,11 +49,15 @@ struct LandingView: View {
                             RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Hatchery Supervisor")
+                        .accessibilityHint("Opens the supervisor login flow")
 
                         NavigationLink(destination: LoginView(role: .manager)) {
                             RoleSelectionButton(title: HatcheryRole.manager.rawValue, iconName: HatcheryRole.manager.displaySymbol)
                         }
                         .buttonStyle(PlainButtonStyle())
+                        .accessibilityLabel("Hatchery Manager")
+                        .accessibilityHint("Opens the manager login flow")
                     }
 
                     NavigationLink(destination: SignUpView(role: session.currentRole)) {

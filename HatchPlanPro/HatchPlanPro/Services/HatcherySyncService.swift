@@ -458,6 +458,53 @@ final class HatcherySyncService {
         }
     }
 
+    // MARK: - Manager Notifications
+
+    /// Syncs manager notifications to Firestore.
+    func syncManagerNotifications(notifications: [HatcheryNotification],
+                                   completion: @escaping (Result<Void, Error>) -> Void) {
+        let payload: [String: Any] = [
+            "notifications": notifications.map { notification in
+                [
+                    "id": notification.id,
+                    "type": notification.type.rawValue,
+                    "title": notification.title,
+                    "message": notification.message,
+                    "timestamp": notification.timestamp,
+                    "timeLabel": notification.timeLabel
+                ] as [String: Any]
+            },
+            "updatedAt": FieldValue.serverTimestamp()
+        ]
+
+        database.collection("managerData").document("notifications").setData(payload, merge: true) { error in
+            if let error {
+                completion(.failure(error))
+            } else {
+                completion(.success(()))
+            }
+        }
+    }
+
+    /// Fetches manager notifications from Firestore.
+    func fetchManagerNotifications(completion: @escaping (Result<[HatcheryNotification], Error>) -> Void) {
+        database.collection("managerData").document("notifications").getDocument { snapshot, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+
+            guard let data = snapshot?.data(),
+                  let notificationsData = data["notifications"] as? [[String: Any]] else {
+                completion(.success([]))
+                return
+            }
+
+            let notifications: [HatcheryNotification] = notificationsData.compactMap(Self.decodeNotification)
+            completion(.success(notifications))
+        }
+    }
+
     private static func decodeNotification(_ dict: [String: Any]) -> HatcheryNotification? {
         guard let typeString = dict["type"] as? String,
               let type = NotificationType(rawValue: typeString),
