@@ -1,3 +1,5 @@
+
+
 //
 //  BatchFormFromScanView.swift
 //  HatchPlanPro
@@ -360,7 +362,7 @@ struct BatchFormFromScanView: View {
             status: .pendingReview,
             scanResult: scanResult,
             createdAt: Date(),
-            createdBy: session.currentUser?.name ?? "Unknown Supervisor"
+            createdBy: session.currentUser.fullName
         )
         
         // Save to session and Firebase
@@ -380,6 +382,11 @@ struct AllocationItem: View {
     let weeks: String
     let units: String
     let percentage: String
+
+    private var filledSegments: Int {
+        let percentValue = Int(percentage.replacingOccurrences(of: "%", with: "")) ?? 0
+        return max(0, min(20, percentValue / 5))
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -416,13 +423,13 @@ struct AllocationItem: View {
                 
                 // Progress indicator
                 HStack(spacing: 4) {
-                    ForEach(0..<Int(percentage.dropLast().dropLast()) / 5, id: \.self) { _ in
+                    ForEach(0..<filledSegments, id: \.self) { _ in
                         Rectangle()
                             .fill(Color.hatchGreen)
                             .frame(height: 4)
                     }
                     
-                    ForEach(0..<(20 - Int(percentage.dropLast().dropLast()) / 5), id: \.self) { _ in
+                    ForEach(0..<(20 - filledSegments), id: \.self) { _ in
                         Rectangle()
                             .fill(Color.hatchSurface)
                             .frame(height: 4)

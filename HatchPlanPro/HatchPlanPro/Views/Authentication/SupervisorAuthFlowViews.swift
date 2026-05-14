@@ -32,7 +32,7 @@ struct SupervisorSplashView: View {
                                 .frame(width: 92, height: 92)
 
                             Circle()
-                                .fill(.hatchOrange)
+                                .fill(Color.hatchOrange)
                                 .frame(width: 18, height: 18)
                                 .overlay(Image(systemName: "chart.line.uptrend.xyaxis").font(.caption2).foregroundColor(.white))
                                 .offset(x: 8, y: 8)
@@ -56,7 +56,7 @@ struct SupervisorSplashView: View {
                                 .frame(maxWidth: .infinity)
                                 .padding()
                                 .foregroundColor(.white)
-                                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                         }
 
                         Text("Role-linked, secure, and audit-friendly")
@@ -137,7 +137,7 @@ struct SupervisorOnboardingView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
@@ -203,7 +203,7 @@ struct SupervisorLoginView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .foregroundColor(.white)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
 
                 Button {
@@ -270,7 +270,7 @@ struct SupervisorBiometricIntroView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
             .padding(.horizontal, 24)
 
@@ -324,7 +324,7 @@ struct SupervisorForgotPasswordView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
 
             NavigationLink(destination: SupervisorLoginView()) {
@@ -395,7 +395,7 @@ struct SupervisorVerificationCodeView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
 
             Button("RESEND CODE") { }
@@ -458,7 +458,7 @@ struct SupervisorResetPasswordView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .foregroundColor(.white)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
             }
             .padding(24)
@@ -511,7 +511,7 @@ struct SupervisorPasswordSuccessView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
             .padding(.horizontal, 24)
 
@@ -557,7 +557,7 @@ struct SupervisorFaceIDSetupView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .foregroundColor(.white)
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
 
                 NavigationLink(destination: SupervisorTouchIDScanView()) {
@@ -639,7 +639,7 @@ struct SupervisorTouchIDReadyView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .foregroundColor(.white)
-                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 .padding(.horizontal, 24)
             Spacer()
         }
