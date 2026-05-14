@@ -130,18 +130,7 @@ final class HatcherySyncService {
                 return
             }
 
-            let notifications = notificationsData.compactMap { notifDict in
-                guard let id = notifDict["id"] as? String,
-                      let typeString = notifDict["type"] as? String,
-                      let type = NotificationType(rawValue: typeString),
-                      let title = notifDict["title"] as? String,
-                      let message = notifDict["message"] as? String,
-                      let timestamp = notifDict["timestamp"] as? Timestamp,
-                      let timeLabel = notifDict["timeLabel"] as? String else {
-                    return nil
-                }
-                return HatcheryNotification(type: type, title: title, message: message, timestamp: timestamp.dateValue(), timeLabel: timeLabel)
-            }
+            let notifications: [HatcheryNotification] = notificationsData.compactMap(Self.decodeNotification)
 
             completion(.success(notifications))
         }
@@ -160,18 +149,7 @@ final class HatcherySyncService {
                 return
             }
 
-            let insights = insightsData.compactMap { insightDict in
-                guard let id = insightDict["id"] as? String,
-                      let batchID = insightDict["batchID"] as? String,
-                      let breed = insightDict["breed"] as? String,
-                      let date = insightDict["date"] as? String,
-                      let statusString = insightDict["status"] as? String,
-                      let status = BatchStatus(rawValue: statusString) else {
-                    return nil
-                }
-                let hatchRate = insightDict["hatchRate"] as? String
-                return BatchInsight(batchID: batchID, breed: breed, date: date, status: status, hatchRate: hatchRate)
-            }
+            let insights: [BatchInsight] = insightsData.compactMap(Self.decodeBatchInsight)
 
             completion(.success(insights))
         }
@@ -228,30 +206,7 @@ final class HatcherySyncService {
                 return
             }
 
-            let batches = scheduleData.compactMap { batchDict in
-                guard let id = batchDict["id"] as? String,
-                      let batchID = batchDict["batchID"] as? String,
-                      let breed = batchDict["breed"] as? String,
-                      let eggs = batchDict["eggs"] as? Int,
-                      let time = batchDict["time"] as? String,
-                      let timeOfDay = batchDict["timeOfDay"] as? String,
-                      let dateLabel = batchDict["dateLabel"] as? String,
-                      let status = batchDict["status"] as? String else {
-                    return nil
-                }
-
-                let statusColor: Color
-                switch status.uppercased() {
-                case "CRITICAL":
-                    statusColor = Color(hex: "#FFB800")
-                case "ON DECK":
-                    statusColor = .hatchGreen
-                default:
-                    statusColor = .clear
-                }
-
-                return ScheduledBatch(id: id, batchID: batchID, breed: breed, eggs: eggs, time: time, timeOfDay: timeOfDay, dateLabel: dateLabel, status: status, statusColor: statusColor)
-            }
+            let batches: [ScheduledBatch] = scheduleData.compactMap(Self.decodeScheduledBatch)
 
             let forecast: EfficiencyForecast
             if let title = forecastData["title"] as? String,
@@ -377,57 +332,17 @@ final class HatcherySyncService {
                 return
             }
 
-            let sensors = (data["sensors"] as? [[String: Any]] ?? []).compactMap { dict in
-                guard let title = dict["title"] as? String,
-                      let value = dict["value"] as? String,
-                      let unit = dict["unit"] as? String,
-                      let trend = dict["trend"] as? String,
-                      let status = dict["status"] as? String,
-                      let iconName = dict["iconName"] as? String else { return nil }
-                return HatchSensorReading(title: title, value: value, unit: unit, trend: trend, status: status, iconName: iconName)
-            }
+            let sensors: [HatchSensorReading] = (data["sensors"] as? [[String: Any]] ?? []).compactMap(Self.decodeSensorReading)
 
-            let metricTiles = (data["metricTiles"] as? [[String: Any]] ?? []).compactMap { dict in
-                guard let title = dict["title"] as? String,
-                      let value = dict["value"] as? String,
-                      let caption = dict["caption"] as? String,
-                      let accent = dict["accent"] as? String else { return nil }
-                return HatchMetricTile(title: title, value: value, caption: caption, accent: accent)
-            }
+            let metricTiles: [HatchMetricTile] = (data["metricTiles"] as? [[String: Any]] ?? []).compactMap(Self.decodeMetricTile)
 
-            let operationalTimeline = (data["operationalTimeline"] as? [[String: Any]] ?? []).compactMap { dict in
-                guard let title = dict["title"] as? String,
-                      let value = dict["value"] as? String,
-                      let caption = dict["caption"] as? String,
-                      let accent = dict["accent"] as? String else { return nil }
-                return HatchMetricTile(title: title, value: value, caption: caption, accent: accent)
-            }
+            let operationalTimeline: [HatchMetricTile] = (data["operationalTimeline"] as? [[String: Any]] ?? []).compactMap(Self.decodeMetricTile)
 
-            let sourceFlocks = (data["sourceFlocks"] as? [[String: Any]] ?? []).compactMap { dict in
-                guard let flockID = dict["flockID"] as? String,
-                      let ageWeeks = dict["ageWeeks"] as? String,
-                      let allocated = dict["allocated"] as? String,
-                      let statusLabel = dict["statusLabel"] as? String else { return nil }
-                return SourceFlockItem(flockID: flockID, ageWeeks: ageWeeks, allocated: allocated, statusLabel: statusLabel)
-            }
+            let sourceFlocks: [SourceFlockItem] = (data["sourceFlocks"] as? [[String: Any]] ?? []).compactMap(Self.decodeSourceFlock)
 
-            let biologicalTimeline = (data["biologicalTimeline"] as? [[String: Any]] ?? []).compactMap { dict in
-                guard let title = dict["title"] as? String,
-                      let detail = dict["detail"] as? String,
-                      let timeLabel = dict["timeLabel"] as? String,
-                      let state = dict["state"] as? String else { return nil }
-                return HatchTimelineStep(title: title, detail: detail, timeLabel: timeLabel, state: state)
-            }
+            let biologicalTimeline: [HatchTimelineStep] = (data["biologicalTimeline"] as? [[String: Any]] ?? []).compactMap(Self.decodeTimelineStep)
 
-            let observations = (data["observations"] as? [[String: Any]] ?? []).compactMap { dict in
-                let category = ObservationCategory(rawValue: dict["category"] as? String ?? ObservationCategory.generalNote.rawValue) ?? .generalNote
-                guard let note = dict["note"] as? String,
-                      let authorName = dict["authorName"] as? String,
-                      let authorRole = dict["authorRole"] as? String,
-                      let timeLabel = dict["timeLabel"] as? String,
-                      let attachedPhotos = dict["attachedPhotos"] as? [String] else { return nil }
-                return SupervisorObservation(category: category, note: note, authorName: authorName, authorRole: authorRole, timeLabel: timeLabel, attachedPhotos: attachedPhotos)
-            }
+            let observations: [SupervisorObservation] = (data["observations"] as? [[String: Any]] ?? []).compactMap(Self.decodeObservation)
 
             let co2Bars = data["co2Bars"] as? [Double] ?? [0.35, 0.55, 0.8, 0.72, 0.9]
             let detail = HatchDetailSnapshot(
@@ -508,51 +423,7 @@ final class HatcherySyncService {
                     return
                 }
 
-                let batches = snapshot.documents.compactMap { doc in
-                    let data = doc.data()
-                    guard let batchID = data["batchID"] as? String,
-                          let breed = data["breed"] as? String,
-                          let eggs = data["eggs"] as? Int,
-                          let targetChicks = data["targetChicks"] as? Int,
-                          let eggSetDate = data["eggSetDate"] as? String,
-                          let hatchDate = data["hatchDate"] as? String,
-                          let statusRaw = data["status"] as? String,
-                          let status = BatchStatus(rawValue: statusRaw),
-                          let createdBy = data["createdBy"] as? String else {
-                        return nil
-                    }
-
-                    var scanResult: VisionScanResult?
-                    if let scanData = data["scanResult"] as? [String: Any] {
-                        let flockID = scanData["flockID"] as? String
-                        let scanDate = scanData["scanDate"] as? String
-                        let confidence = scanData["confidence"] as? Double ?? 0.0
-                        let fieldsFound = scanData["fieldsFound"] as? Int ?? 0
-                        let rawText = scanData["rawText"] as? String ?? ""
-                        
-                        scanResult = VisionScanResult(
-                            flockID: flockID,
-                            scanDate: scanDate,
-                            confidence: confidence,
-                            fieldsFound: fieldsFound,
-                            rawText: rawText,
-                            timestamp: Date()
-                        )
-                    }
-
-                    return ScannedBatch(
-                        batchID: batchID,
-                        breed: breed,
-                        eggs: eggs,
-                        targetChicks: targetChicks,
-                        eggSetDate: eggSetDate,
-                        hatchDate: hatchDate,
-                        status: status,
-                        scanResult: scanResult,
-                        createdAt: Date(),
-                        createdBy: createdBy
-                    )
-                }
+                let batches: [ScannedBatch] = snapshot.documents.compactMap { Self.decodeScannedBatch(data: $0.data()) }
 
                 completion(.success(batches))
             }
@@ -585,5 +456,159 @@ final class HatcherySyncService {
                 }
             }
         }
+    }
+
+    private static func decodeNotification(_ dict: [String: Any]) -> HatcheryNotification? {
+        guard let typeString = dict["type"] as? String,
+              let type = NotificationType(rawValue: typeString),
+              let title = dict["title"] as? String,
+              let message = dict["message"] as? String,
+              let timestamp = dict["timestamp"] as? Timestamp,
+              let timeLabel = dict["timeLabel"] as? String else {
+            return nil
+        }
+
+        return HatcheryNotification(type: type, title: title, message: message, timestamp: timestamp.dateValue(), timeLabel: timeLabel)
+    }
+
+    private static func decodeBatchInsight(_ dict: [String: Any]) -> BatchInsight? {
+        guard let batchID = dict["batchID"] as? String,
+              let breed = dict["breed"] as? String,
+              let date = dict["date"] as? String,
+              let statusString = dict["status"] as? String,
+              let status = BatchStatus(rawValue: statusString) else {
+            return nil
+        }
+
+        return BatchInsight(batchID: batchID, breed: breed, date: date, status: status, hatchRate: dict["hatchRate"] as? String)
+    }
+
+    private static func decodeScheduledBatch(_ dict: [String: Any]) -> ScheduledBatch? {
+        guard let id = dict["id"] as? String,
+              let batchID = dict["batchID"] as? String,
+              let breed = dict["breed"] as? String,
+              let eggs = dict["eggs"] as? Int,
+              let time = dict["time"] as? String,
+              let timeOfDay = dict["timeOfDay"] as? String,
+              let dateLabel = dict["dateLabel"] as? String,
+              let status = dict["status"] as? String else {
+            return nil
+        }
+
+        let statusColor: Color
+        switch status.uppercased() {
+        case "CRITICAL":
+            statusColor = Color(hex: "#FFB800")
+        case "ON DECK":
+            statusColor = .hatchGreen
+        default:
+            statusColor = .clear
+        }
+
+        return ScheduledBatch(id: id, batchID: batchID, breed: breed, eggs: eggs, time: time, timeOfDay: timeOfDay, dateLabel: dateLabel, status: status, statusColor: statusColor)
+    }
+
+    private static func decodeSensorReading(_ dict: [String: Any]) -> HatchSensorReading? {
+        guard let title = dict["title"] as? String,
+              let value = dict["value"] as? String,
+              let unit = dict["unit"] as? String,
+              let trend = dict["trend"] as? String,
+              let status = dict["status"] as? String,
+              let iconName = dict["iconName"] as? String else {
+            return nil
+        }
+
+        return HatchSensorReading(title: title, value: value, unit: unit, trend: trend, status: status, iconName: iconName)
+    }
+
+    private static func decodeMetricTile(_ dict: [String: Any]) -> HatchMetricTile? {
+        guard let title = dict["title"] as? String,
+              let value = dict["value"] as? String,
+              let caption = dict["caption"] as? String,
+              let accent = dict["accent"] as? String else {
+            return nil
+        }
+
+        return HatchMetricTile(title: title, value: value, caption: caption, accent: accent)
+    }
+
+    private static func decodeSourceFlock(_ dict: [String: Any]) -> SourceFlockItem? {
+        guard let flockID = dict["flockID"] as? String,
+              let ageWeeks = dict["ageWeeks"] as? String,
+              let allocated = dict["allocated"] as? String,
+              let statusLabel = dict["statusLabel"] as? String else {
+            return nil
+        }
+
+        return SourceFlockItem(flockID: flockID, ageWeeks: ageWeeks, allocated: allocated, statusLabel: statusLabel)
+    }
+
+    private static func decodeTimelineStep(_ dict: [String: Any]) -> HatchTimelineStep? {
+        guard let title = dict["title"] as? String,
+              let detail = dict["detail"] as? String,
+              let timeLabel = dict["timeLabel"] as? String,
+              let state = dict["state"] as? String else {
+            return nil
+        }
+
+        return HatchTimelineStep(title: title, detail: detail, timeLabel: timeLabel, state: state)
+    }
+
+    private static func decodeObservation(_ dict: [String: Any]) -> SupervisorObservation? {
+        guard let note = dict["note"] as? String,
+              let authorName = dict["authorName"] as? String,
+              let authorRole = dict["authorRole"] as? String,
+              let timeLabel = dict["timeLabel"] as? String,
+              let attachedPhotos = dict["attachedPhotos"] as? [String] else {
+            return nil
+        }
+
+        let category = ObservationCategory(rawValue: dict["category"] as? String ?? ObservationCategory.generalNote.rawValue) ?? .generalNote
+        return SupervisorObservation(category: category.rawValue, note: note, authorName: authorName, authorRole: authorRole, timeLabel: timeLabel, attachedPhotos: attachedPhotos)
+    }
+
+    private static func decodeScannedBatch(data: [String: Any]) -> ScannedBatch? {
+        guard let batchID = data["batchID"] as? String,
+              let breed = data["breed"] as? String,
+              let eggs = data["eggs"] as? Int,
+              let targetChicks = data["targetChicks"] as? Int,
+              let eggSetDate = data["eggSetDate"] as? String,
+              let hatchDate = data["hatchDate"] as? String,
+              let statusRaw = data["status"] as? String,
+              let status = BatchStatus(rawValue: statusRaw),
+              let createdBy = data["createdBy"] as? String else {
+            return nil
+        }
+
+        var scanResult: VisionScanResult?
+        if let scanData = data["scanResult"] as? [String: Any] {
+            let flockID = scanData["flockID"] as? String
+            let scanDate = scanData["scanDate"] as? String
+            let confidence = scanData["confidence"] as? Double ?? 0.0
+            let fieldsFound = scanData["fieldsFound"] as? Int ?? 0
+            let rawText = scanData["rawText"] as? String ?? ""
+
+            scanResult = VisionScanResult(
+                flockID: flockID,
+                scanDate: scanDate,
+                confidence: confidence,
+                fieldsFound: fieldsFound,
+                rawText: rawText,
+                timestamp: Date()
+            )
+        }
+
+        return ScannedBatch(
+            batchID: batchID,
+            breed: breed,
+            eggs: eggs,
+            targetChicks: targetChicks,
+            eggSetDate: eggSetDate,
+            hatchDate: hatchDate,
+            status: status,
+            scanResult: scanResult,
+            createdAt: Date(),
+            createdBy: createdBy
+        )
     }
 }
