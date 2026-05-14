@@ -209,26 +209,18 @@ struct LiveScannerView: View {
                     .frame(maxWidth: .infinity)
                     
                     // Capture Button (Center)
-                    NavigationLink(
-                        destination: {
-                            if let result = capturedScanResult {
-                                ScanResultView(scanResult: result)
-                            }
-                        },
-                        label: {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                
-                                Circle()
-                                    .stroke(Color.hatchGreen, lineWidth: 3)
-                            }
-                            .frame(width: 60, height: 60)
-                        }
-                    )
-                    .disabled(capturedScanResult == nil)
-                    .onTapGesture {
+                    Button {
                         performCapture()
+                        showScanResult = capturedScanResult != nil
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+
+                            Circle()
+                                .stroke(Color.hatchGreen, lineWidth: 3)
+                        }
+                        .frame(width: 60, height: 60)
                     }
                     .frame(maxWidth: .infinity)
                     
@@ -265,6 +257,11 @@ struct LiveScannerView: View {
                 .padding(.bottom, 20)
                 Spacer()
             }
+
+            NavigationLink(destination: scanResultDestination, isActive: $showScanResult) {
+                EmptyView()
+            }
+            .hidden()
         }
         .onAppear {
             cameraManager.requestCameraAccess()
@@ -275,6 +272,16 @@ struct LiveScannerView: View {
             cameraManager.stopSession()
         }
         .navigationBarBackButtonHidden(true)
+    }
+
+    private var scanResultDestination: some View {
+        Group {
+            if let result = capturedScanResult {
+                ScanResultView(scanResult: result)
+            } else {
+                EmptyView()
+            }
+        }
     }
     
     private func performCapture() {
