@@ -150,7 +150,7 @@ struct SupervisorHomeView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(20)
-                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.hatchGreen))
+                    .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(Color.hatchGreen))
                     .padding(.horizontal, 16)
 
                     // MARK: - Yield Projection

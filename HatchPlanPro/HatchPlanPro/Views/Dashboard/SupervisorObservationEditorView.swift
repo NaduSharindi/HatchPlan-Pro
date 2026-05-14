@@ -198,7 +198,7 @@ struct SupervisorObservationEditorView: View {
 
             HStack(spacing: 10) {
                 Circle()
-                    .fill(.hatchGreen)
+                    .fill(Color.hatchGreen)
                     .frame(width: 8, height: 8)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("SUPERVISOR ID")

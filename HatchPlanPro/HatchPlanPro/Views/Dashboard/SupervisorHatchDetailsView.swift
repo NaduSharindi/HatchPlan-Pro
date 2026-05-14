@@ -314,7 +314,7 @@ struct SupervisorHatchDetailsView: View {
                         .foregroundColor(.white)
                         .padding(.vertical, 7)
                         .padding(.horizontal, 12)
-                        .background(Capsule().fill(.hatchGreen))
+                        .background(Capsule().fill(Color.hatchGreen))
                 }
                 .buttonStyle(.plain)
             }
