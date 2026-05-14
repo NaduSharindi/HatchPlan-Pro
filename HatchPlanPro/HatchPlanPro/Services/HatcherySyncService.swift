@@ -323,7 +323,7 @@ final class HatcherySyncService {
         let observationPayload = detail.observations.map { observation in
             [
                 "id": observation.id,
-                "category": observation.category.rawValue,
+                    "category": observation.category,
                 "note": observation.note,
                 "authorName": observation.authorName,
                 "authorRole": observation.authorRole,
@@ -467,7 +467,7 @@ final class HatcherySyncService {
             "targetChicks": batch.targetChicks,
             "eggSetDate": batch.eggSetDate,
             "hatchDate": batch.hatchDate,
-            "status": batch.status.rawValue,
+            "status": batch.status,
             "createdAt": FieldValue.serverTimestamp(),
             "createdBy": batch.createdBy
         ]
@@ -565,13 +565,18 @@ final class HatcherySyncService {
         var data = payload
         data["executedAt"] = FieldValue.serverTimestamp()
 
-        database.collection("supervisorData").document(docId).setData(data) { error in
+        database.collection("supervisorData").document(docId).setData(data) { [weak self] error in
             if let error = error {
                 completion(.failure(error))
             } else {
                 // also set a flag on hatchDetails document for easy lookup
                 let detailDoc = "hatchDetails_\(batchID)"
-                database.collection("supervisorData").document(detailDoc).setData(["status": "SYNCED", "lastExecutedAt": FieldValue.serverTimestamp()], merge: true) { err in
+                guard let self else {
+                    completion(.failure(NSError(domain: "HatcherySyncService", code: -1, userInfo: [NSLocalizedDescriptionKey: "Sync service was released before completion"])))
+                    return
+                }
+
+                self.database.collection("supervisorData").document(detailDoc).setData(["status": "SYNCED", "lastExecutedAt": FieldValue.serverTimestamp()], merge: true) { err in
                     if let err = err {
                         completion(.failure(err))
                     } else {
