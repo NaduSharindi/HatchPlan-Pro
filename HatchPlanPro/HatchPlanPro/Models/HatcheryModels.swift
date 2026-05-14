@@ -195,7 +195,7 @@ struct BatchInsight: Identifiable, Codable, Hashable {
 }
 
 struct ScheduledBatch: Identifiable, Codable, Hashable {
-    let id: String = UUID().uuidString
+    let id: String
     let batchID: String
     let breed: String
     let eggs: Int
@@ -231,26 +231,34 @@ struct ScheduledBatch: Identifiable, Codable, Hashable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        batchID = try container.decode(String.self, forKey: .batchID)
-        breed = try container.decode(String.self, forKey: .breed)
-        eggs = try container.decode(Int.self, forKey: .eggs)
-        time = try container.decode(String.self, forKey: .time)
-        timeOfDay = try container.decode(String.self, forKey: .timeOfDay)
-        dateLabel = try container.decode(String.self, forKey: .dateLabel)
-        status = try container.decode(String.self, forKey: .status)
-        
-        // Determine color based on status
-        statusColor = {
-            switch status.uppercased() {
-            case "CRITICAL":
-                return Color(hex: "#FFB800")
-            case "ON DECK":
-                return .hatchGreen
-            default:
-                return Color.secondary
-            }
-        }()
+        let decodedId = try container.decode(String.self, forKey: .id)
+        let decodedBatchID = try container.decode(String.self, forKey: .batchID)
+        let decodedBreed = try container.decode(String.self, forKey: .breed)
+        let decodedEggs = try container.decode(Int.self, forKey: .eggs)
+        let decodedTime = try container.decode(String.self, forKey: .time)
+        let decodedTimeOfDay = try container.decode(String.self, forKey: .timeOfDay)
+        let decodedDateLabel = try container.decode(String.self, forKey: .dateLabel)
+        let decodedStatus = try container.decode(String.self, forKey: .status)
+
+        let decodedStatusColor: Color
+        switch decodedStatus.uppercased() {
+        case "CRITICAL":
+            decodedStatusColor = Color(hex: "#FFB800")
+        case "ON DECK":
+            decodedStatusColor = .hatchGreen
+        default:
+            decodedStatusColor = Color.secondary
+        }
+
+        id = decodedId
+        batchID = decodedBatchID
+        breed = decodedBreed
+        eggs = decodedEggs
+        time = decodedTime
+        timeOfDay = decodedTimeOfDay
+        dateLabel = decodedDateLabel
+        status = decodedStatus
+        statusColor = decodedStatusColor
     }
 
     func encode(to encoder: Encoder) throws {
