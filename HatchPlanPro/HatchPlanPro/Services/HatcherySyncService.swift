@@ -5,6 +5,7 @@
 //  Created by GitHub Copilot on 2026-05-12.
 //
 
+import SwiftUI
 import Foundation
 import FirebaseFirestore
 
