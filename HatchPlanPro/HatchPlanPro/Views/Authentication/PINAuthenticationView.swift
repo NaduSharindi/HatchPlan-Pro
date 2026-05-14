@@ -141,5 +141,5 @@ struct PINAuthenticationView: View {
 
 // Preview to test it without running the app
 #Preview {
-    PINAuthenticationView(roleTitle: "Hatchery Supervisor", subtitle: "Enter your supervisor PIN")
+    PINAuthenticationView(role: .supervisor, subtitle: "Enter your supervisor PIN")
 }

@@ -371,6 +371,7 @@ struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
     let incubationStage: String
     let imageName: String
     let liveConnected: Bool
+    let sensors: [HatchSensorReading]
     let metricTiles: [HatchMetricTile]
     let operationalTimeline: [HatchMetricTile]
     let sourceFlocks: [SourceFlockItem]
@@ -385,7 +386,7 @@ struct HatchDetailSnapshot: Identifiable, Codable, Hashable {
     let shavalsNeededLabel: String
 
     enum CodingKeys: String, CodingKey {
-        case id, batchID, productionUnit, breed, criticalStatus, incubationStage, imageName, liveConnected, metricTiles, operationalTimeline, sourceFlocks, biologicalTimeline, observations, eggSetDate, hatchDate, co2Value, co2Unit, co2Bars, eggsToSetLabel, shavalsNeededLabel
+        case id, batchID, productionUnit, breed, criticalStatus, incubationStage, imageName, liveConnected, sensors, metricTiles, operationalTimeline, sourceFlocks, biologicalTimeline, observations, eggSetDate, hatchDate, co2Value, co2Unit, co2Bars, eggsToSetLabel, shavalsNeededLabel
     }
 }
 
