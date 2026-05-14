@@ -551,6 +551,7 @@ final class AppSessionViewModel: ObservableObject {
                             incubationStage: old.incubationStage,
                             imageName: old.imageName,
                             liveConnected: old.liveConnected,
+                            sensors: old.sensors,
                             metricTiles: old.metricTiles,
                             operationalTimeline: old.operationalTimeline,
                             sourceFlocks: old.sourceFlocks,
