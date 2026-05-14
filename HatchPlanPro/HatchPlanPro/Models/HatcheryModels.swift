@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import Combine
+import FirebaseCore
 
 enum HatcheryRole: String, CaseIterable, Identifiable, Codable {
     case manager = "Hatchery Manager"
