@@ -27,7 +27,10 @@ struct ManagerApprovalsView: View {
 
                 VStack(spacing: 14) {
                     ForEach(approvals) { item in
-                        ApprovalRowView(item: item)
+                        NavigationLink(destination: ManagerApprovalPlanView()) {
+                            ApprovalRowView(item: item)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
