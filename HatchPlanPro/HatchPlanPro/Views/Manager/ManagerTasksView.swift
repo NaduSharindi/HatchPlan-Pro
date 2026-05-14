@@ -104,7 +104,7 @@ struct ManagerMapView: View {
                 metricTile(title: "15%", subtitle: "BUFFER APPLIED", icon: "chart.bar.fill", accent: Color.hatchOrangeSoft, tint: .hatchOrange)
             }
 
-            Button(action: {}) {
+            NavigationLink(destination: ManagerApprovalPlanView()) {
                 Text("View Plan Details >")
                     .font(.headline.weight(.semibold))
                     .foregroundColor(.hatchGreen)
