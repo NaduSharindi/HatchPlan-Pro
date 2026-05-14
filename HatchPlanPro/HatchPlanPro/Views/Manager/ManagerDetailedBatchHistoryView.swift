@@ -1,172 +1,254 @@
+//
+//  ManagerDetailedBatchHistoryView.swift
+//  HatchPlanPro
+//
+//  Created by GitHub Copilot on 2026-05-13.
+//
+
 import SwiftUI
+import MapKit
 
 struct ManagerDetailedBatchHistoryView: View {
-    let batch: BatchHistoryItem
-    @Environment(\.dismiss) private var dismiss
-    
+    @EnvironmentObject var session: AppSessionViewModel
+    @Environment(\.dismiss) var dismiss
+
+    let batchID: String
+    let breed: String
+    let date: String
+    let status: String
+    let statusColor: Color
+
+    @State private var showExecuteSheet = false
+    @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 6.9319, longitude: 79.8478), span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06))
+
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            VStack(spacing: 24) {
-                // Header Details
-                headerSection
-                
-                // Analytics
-                analyticsSection
-                
-                // Timeline
-                timelineSection
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 32)
-        }
-        .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
-                Button(action: { dismiss() }) {
-                    Image(systemName: "arrow.left")
-                        .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.hatchGreen)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(.white))
-                        .shadow(color: .black.opacity(0.04), radius: 8, x: 0, y: 2)
-                }
-            }
-            ToolbarItem(placement: .principal) {
-                Text(batch.id)
-                    .font(.headline.weight(.bold))
-                    .foregroundColor(.primary)
-            }
-        }
-    }
-    
-    private var headerSection: some View {
         VStack(spacing: 16) {
-            ZStack {
-                Circle()
-                    .fill(Color.hatchGreenSoft)
-                    .frame(width: 80, height: 80)
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 36))
-                    .foregroundColor(.hatchGreen)
-            }
-            
-            VStack(spacing: 4) {
-                Text("Batch Completed")
-                    .font(.title2.weight(.bold))
-                    .foregroundColor(.hatchGreen)
-                Text(batch.date)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(.vertical, 12)
-        .frame(maxWidth: .infinity)
-        .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white))
-        .shadow(color: .black.opacity(0.03), radius: 10, x: 0, y: 4)
-    }
-    
-    private var analyticsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("PERFORMANCE ANALYTICS")
-                .font(.caption.weight(.bold))
-                .tracking(1.2)
-                .foregroundColor(.secondary)
-            
-            HStack(spacing: 12) {
-                statCard(title: "Hatch Rate", value: batch.rate, icon: "chart.bar.fill", color: .hatchGreen)
-                statCard(title: "Quality", value: "A+", icon: "star.fill", color: .hatchOrange)
-            }
-            
-            HStack(spacing: 12) {
-                statCard(title: "Mortality", value: "0.8%", icon: "heart.slash.fill", color: .red)
-                statCard(title: "Duration", value: "21 Days", icon: "clock.fill", color: .blue)
-            }
-        }
-    }
-    
-    private func statCard(title: String, value: String, icon: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+            // Header
             HStack {
-                Image(systemName: icon)
-                    .foregroundColor(color)
-                    .font(.system(size: 16))
-                Spacer()
-            }
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text(value)
-                    .font(.system(size: 24, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                Text(title)
-                    .font(.caption.weight(.medium))
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(16)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
-        .shadow(color: .black.opacity(0.03), radius: 10, x: 0, y: 4)
-    }
-    
-    private var timelineSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("BATCH TIMELINE")
-                .font(.caption.weight(.bold))
-                .tracking(1.2)
-                .foregroundColor(.secondary)
-            
-            VStack(spacing: 0) {
-                timelineEvent(title: "Eggs Set", date: "Oct 7, 2023", description: "12,500 eggs placed in Incubator 3", isLast: false)
-                timelineEvent(title: "Candling Day 7", date: "Oct 14, 2023", description: "Fertility confirmed at 94.2%", isLast: false)
-                timelineEvent(title: "Transfer to Hatcher", date: "Oct 25, 2023", description: "Moved to Hatcher B successfully", isLast: false)
-                timelineEvent(title: "Hatching Completed", date: batch.date.replacingOccurrences(of: "Completed ", with: ""), description: "Final chick count verified", isLast: true)
-            }
-            .padding(16)
-            .background(RoundedRectangle(cornerRadius: 24, style: .continuous).fill(.white))
-            .shadow(color: .black.opacity(0.03), radius: 10, x: 0, y: 4)
-        }
-    }
-    
-    private func timelineEvent(title: String, date: String, description: String, isLast: Bool) -> some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(Color.hatchGreen)
-                    .frame(width: 12, height: 12)
-                    .padding(.top, 4)
-                
-                if !isLast {
-                    Rectangle()
-                        .fill(Color.hatchGreenSoft)
-                        .frame(width: 2)
-                        .padding(.vertical, 4)
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .foregroundColor(.hatchGreen)
                 }
-            }
-            .frame(width: 16)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Text(title)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                    Text(date)
-                        .font(.caption2.weight(.medium))
+                Spacer()
+                Text("Batch Details")
+                    .font(.headline)
+                    .foregroundColor(.hatchGreen)
+                Spacer()
+                Button(action: { /* maybe open more */ }) {
+                    Image(systemName: "ellipsis")
                         .foregroundColor(.secondary)
                 }
-                Text(description)
-                    .font(.caption)
+            }
+            .padding()
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    // ID Card
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("BATCH ID")
+                                .font(.caption2.weight(.bold))
+                                .foregroundColor(.secondary)
+                            Text(batchID)
+                                .font(.title3.weight(.bold))
+                                .foregroundColor(.hatchGreen)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing) {
+                            Text(status)
+                                .font(.caption2.weight(.bold))
+                                .foregroundColor(.white)
+                                .padding(.vertical, 6)
+                                .padding(.horizontal, 10)
+                                .background(RoundedRectangle(cornerRadius: 8).fill(statusColor))
+                            
+                            HStack(spacing: 6) {
+                                Image(systemName: "clock")
+                                    .foregroundColor(.hatchGreen)
+                                Text("4 Days Left")
+                                    .font(.caption2)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                    }
+                    .padding()
+                    .background(RoundedRectangle(cornerRadius: 14).fill(Color.white))
+
+                    // Stat tiles
+                    HStack(spacing: 12) {
+                        statTile(title: "TARGET EGG SET", value: "14,500", icon: "cube.box.fill")
+                        statTile(title: "SAFETY BUFFER", value: "15%", icon: "shield.fill", bg: Color(hex: "#F7E7B6"))
+                    }
+                    .padding(.horizontal, 16)
+
+                    HStack(spacing: 12) {
+                        statTile(title: "SHAVALS REQUIRED", value: "450 Units", icon: "tray.full")
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Timeline
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("OPERATIONAL TIMELINE")
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 12) {
+                            timelineTile(title: "EGG SET DATE", value: "Oct 20, 2023", icon: "calendar")
+                            timelineTile(title: "HATCH DATE", value: "Nov 10, 2023", icon: "egg.fill")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Source flocks
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Source Flocks")
+                                .font(.headline)
+                                .foregroundColor(.hatchGreen)
+                            Spacer()
+                            Text("MULTI-BATCH ALLOCATION")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        VStack(spacing: 12) {
+                            sourceRow(id: "F-902", weeks: "34 weeks", allocated: "6,000")
+                            sourceRow(id: "F-815", weeks: "26 weeks", allocated: "4,500")
+                            sourceRow(id: "F-722", weeks: "34 weeks", allocated: "4,000")
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    // Map card
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Station C-9")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(.white)
+                        Text("Hatchery Main Sector")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.9))
+                    }
+                    .frame(height: 140)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        Map(coordinateRegion: $region, interactionModes: .all, annotationItems: [MapPin(coordinate: region.center)]) { pin in
+                            MapMarker(coordinate: pin.coordinate, tint: .hatchGreen)
+                        }
+                        .cornerRadius(12)
+                    )
+                    .padding(.horizontal, 16)
+
+                    // Batch Records grid (placeholders)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text("Batch Records")
+                                .font(.headline)
+                                .foregroundColor(.hatchGreen)
+                            Spacer()
+                            Text("View All (9)")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
+                            ForEach(0..<6) { idx in
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(Color(hex: "#F7F7FA"))
+                                    .frame(height: 74)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+
+                    Spacer(minLength: 40)
+                }
+            }
+
+            // Execute Set Button
+            Button(action: { showExecuteSheet = true }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "bolt.fill")
+                    Text("Execute Set")
+                }
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 52)
+                .background(RoundedRectangle(cornerRadius: 12).fill(Color.hatchGreen))
+                .padding(16)
+            }
+            .sheet(isPresented: $showExecuteSheet) {
+                ExecuteSetSheetView(batchID: batchID)
+                    .environmentObject(session)
+            }
+        }
+        .background(Color.hatchSurface.ignoresSafeArea())
+    }
+
+    private func statTile(title: String, value: String, icon: String, bg: Color = Color.white) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: icon)
+                    .foregroundColor(.hatchGreen)
+                    .padding(8)
+                    .background(Circle().fill(Color.hatchGreenSoft))
+                Spacer()
+            }
+            Text(title)
+                .font(.caption2.weight(.semibold))
+                .foregroundColor(.secondary)
+            Text(value)
+                .font(.title3.weight(.bold))
+                .foregroundColor(.black)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(bg))
+    }
+
+    private func timelineTile(title: String, value: String, icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .foregroundColor(.hatchGreen)
+                Text(title)
+                    .font(.caption2.weight(.semibold))
                     .foregroundColor(.secondary)
             }
-            .padding(.bottom, isLast ? 0 : 20)
+            Text(value)
+                .font(.body.weight(.semibold))
+                .foregroundColor(.black)
         }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
+        .frame(maxWidth: .infinity)
+    }
+
+    private func sourceRow(id: String, weeks: String, allocated: String) -> some View {
+        HStack {
+            Circle()
+                .fill(Color.hatchGreenSoft)
+                .frame(width: 40, height: 40)
+                .overlay(Image(systemName: "leaf.fill").foregroundColor(.hatchGreen))
+            VStack(alignment: .leading, spacing: 4) {
+                Text(id)
+                    .font(.subheadline.weight(.semibold))
+                Text(weeks)
+                    .font(.caption2)
+                    .foregroundColor(.secondary)
+            }
+            Spacer()
+            Text(allocated)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.hatchGreen)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 12).fill(Color.white))
     }
 }
 
+struct MapPin: Identifiable {
+    let id = UUID()
+    var coordinate: CLLocationCoordinate2D
+}
+
 #Preview {
-    NavigationStack {
-        ManagerDetailedBatchHistoryView(batch: BatchHistoryItem(id: "#B2023-10-A", date: "Completed Oct 28, 2023", rate: "94.5%"))
-    }
+    ManagerDetailedBatchHistoryView(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen)
+        .environmentObject(AppSessionViewModel())
 }

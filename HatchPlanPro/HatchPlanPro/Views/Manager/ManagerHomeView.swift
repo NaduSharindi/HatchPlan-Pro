@@ -125,12 +125,12 @@ struct ManagerHomeView: View {
 
     private var statusCards: some View {
         HStack(spacing: 12) {
-            NavigationLink(destination: SupervisorScheduleView()) {
+            NavigationLink(destination: ManagerScheduleView()) {
                 navigationSummaryCard(title: "Ongoing Hatches", subtitle: "View monitoring active", icon: "circle.grid.2x2.fill")
             }
             .buttonStyle(.plain)
             
-            NavigationLink(destination: SupervisorHistoryView()) {
+            NavigationLink(destination: ManagerBatchHistoryListView()) {
                 navigationSummaryCard(title: "Completed Batches", subtitle: "Batch performance history", icon: "tray.full.fill")
             }
             .buttonStyle(.plain)

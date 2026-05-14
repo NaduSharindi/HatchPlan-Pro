@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct SupervisorHistoryView: View {
+struct ManagerBatchHistoryListView: View {
     @EnvironmentObject private var session: AppSessionViewModel
     @StateObject private var viewModel = SupervisorHistoryViewModel()
 
@@ -95,24 +95,27 @@ struct SupervisorHistoryView: View {
 
             VStack(spacing: 10) {
                 ForEach(batches) { batch in
-                    HStack(spacing: 12) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(batch.id)
+                    NavigationLink(destination: ManagerDetailedBatchHistoryView(batchID: batch.id, breed: "Ross 308", date: batch.date, status: "COMPLETED", statusColor: .hatchGreen)) {
+                        HStack(spacing: 12) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(batch.id)
+                                    .font(.headline)
+                                    .foregroundColor(.hatchGreen)
+                                Text(batch.date)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Text(batch.rate)
                                 .font(.headline)
                                 .foregroundColor(.hatchGreen)
-                            Text(batch.date)
-                                .font(.caption)
+                            Image(systemName: "chevron.right")
                                 .foregroundColor(.secondary)
                         }
-                        Spacer()
-                        Text(batch.rate)
-                            .font(.headline)
-                            .foregroundColor(.hatchGreen)
-                        Image(systemName: "chevron.right")
-                            .foregroundColor(.secondary)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white))
                     }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(.white))
+                    .buttonStyle(.plain)
                 }
             }
         }
