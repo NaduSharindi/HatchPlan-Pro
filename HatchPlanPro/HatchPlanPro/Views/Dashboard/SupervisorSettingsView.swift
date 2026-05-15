@@ -53,10 +53,10 @@ struct SupervisorSettingsView: View {
 
                         settingRow(icon: "bell.fill", title: "System Notifications", enabled: $viewModel.notificationsEnabled)
                         settingRow(icon: "iphone.gen1.radiowaves.left.and.right", title: "Haptic Feedback", enabled: $viewModel.hapticEnabled)
-                        settingRow(icon: "waveform.mic", title: "Siri & Search", enabled: $viewModel.siriEnabled)
+                        settingRow(icon: "mic.fill", title: "Siri & Search", enabled: $viewModel.siriEnabled)
                         
                         NavigationLink(destination: SupervisorAccessibilityView()) {
-                            settingRowStatic(icon: "figure.dress", title: "Accessibility")
+                            settingRowStatic(icon: "accessibility", title: "Accessibility")
                         }
                     }
                     .supervisorCard()
@@ -91,7 +91,7 @@ struct SupervisorSettingsView: View {
                             supportRow(icon: "headphones", title: "Contact Support")
                         }
                         NavigationLink(destination: SupervisorTermsView()) {
-                            supportRow(icon: "gavel.fill", title: "Terms of Service")
+                            supportRow(icon: "doc.text.fill", title: "Terms of Service")
                         }
                         NavigationLink(destination: SupervisorPrivacyView()) {
                             supportRow(icon: "hand.raised.fill", title: "Privacy Policy")
@@ -270,7 +270,7 @@ struct SupervisorAccessibilityView: View {
                             .foregroundColor(.secondary)
 
                         HStack {
-                            Image(systemName: "waveform.mic")
+                            Image(systemName: "mic.fill")
                                 .font(.title3)
                                 .foregroundColor(.hatchGreen)
                                 .padding(8)
@@ -583,7 +583,7 @@ struct SupervisorUserManualView: View {
     @Environment(\.dismiss) var dismiss
 
     let categories = [
-        (icon: "rocket.fill", title: "Getting Started", subtitle: "Initial setup and workspace configuration"),
+        (icon: "paperplane.fill", title: "Getting Started", subtitle: "Initial setup and workspace configuration"),
         (icon: "leaf.fill", title: "Batch Management", subtitle: "Tracking cycles from egg to hatching"),
         (icon: "wifi.router.fill", title: "Sensor Integration", subtitle: "Calibrating IoT humidity and temp modes"),
         (icon: "chart.bar.fill", title: "Advanced Analytics", subtitle: "Predictive yield and health insights"),
@@ -1014,7 +1014,7 @@ struct SupervisorPrivacyView: View {
 
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Image(systemName: "database.fill")
+                                Image(systemName: "cylinder.split.1x2.fill")
                                     .foregroundColor(.hatchGreen)
                                 Text("Information Collection")
                                     .font(.headline.weight(.semibold))
@@ -1053,7 +1053,7 @@ struct SupervisorPrivacyView: View {
 
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
-                                Image(systemName: "user.circle.fill")
+                                Image(systemName: "person.circle.fill")
                                     .foregroundColor(.hatchGreen)
                                 Text("Your Rights")
                                     .font(.headline.weight(.semibold))

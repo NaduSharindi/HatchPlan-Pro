@@ -15,7 +15,7 @@ struct OnboardingView: View {
     
     // The data matching your 4 Figma screens
     let pages: [OnboardingPage] = [
-        OnboardingPage(systemImage: "egg.fill", title: "Welcome to HatchPlan Pro", description: "Your intelligent poultry hatchery management solution."),
+        OnboardingPage(systemImage: "oval.portrait.fill", title: "Welcome to HatchPlan Pro", description: "Your intelligent poultry hatchery management solution."),
         OnboardingPage(systemImage: "thermometer.sun.fill", title: "Monitor Batches", description: "Track temperature, humidity, and egg turner status in real-time."),
         OnboardingPage(systemImage: "bell.badge.fill", title: "Instant Notifications", description: "Get alerts for critical environmental changes and task reminders."),
         OnboardingPage(systemImage: "chart.line.uptrend.xyaxis", title: "Predict & Optimize", description: "Leverage data-driven insights to improve hatch rates and efficiency.")

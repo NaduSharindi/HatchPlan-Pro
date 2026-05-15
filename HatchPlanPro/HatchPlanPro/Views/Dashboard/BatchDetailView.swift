@@ -94,7 +94,7 @@ struct BatchDetailView: View {
                             .foregroundColor(.secondary)
                         HStack(spacing: 12) {
                             timelineTile(title: "EGG SET DATE", value: "Oct 20, 2023", icon: "calendar")
-                            timelineTile(title: "HATCH DATE", value: "Nov 10, 2023", icon: "egg.fill")
+                            timelineTile(title: "HATCH DATE", value: "Nov 10, 2023", icon: "oval.portrait.fill")
                         }
                     }
                     .padding(.horizontal, 16)

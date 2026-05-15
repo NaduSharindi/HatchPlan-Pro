@@ -97,7 +97,7 @@ struct ManagerApprovalPlanView: View {
                             .padding(.horizontal, 4)
                         HStack(spacing: 12) {
                             timelineTile(title: "EGG SET DATE", value: "Oct 20, 2023", icon: "calendar", iconColor: .hatchGreen)
-                            timelineTile(title: "HATCH DATE", value: "Nov 10, 2023", icon: "egg.fill", iconColor: .hatchOrange)
+                            timelineTile(title: "HATCH DATE", value: "Nov 10, 2023", icon: "oval.portrait.fill", iconColor: .hatchOrange)
                         }
                     }
                     .padding(.horizontal, 16)

@@ -233,7 +233,7 @@ struct SupervisorHomeView: View {
                     .padding(8)
                     .background(Circle().fill(tagColor.opacity(0.15)))
             } else {
-                Image(systemName: "calendar.fill")
+                Image(systemName: "calendar")
                 .foregroundColor(.hatchGreen)
                 .padding(8)
                 .background(Circle().fill(Color.hatchGreenSoft))

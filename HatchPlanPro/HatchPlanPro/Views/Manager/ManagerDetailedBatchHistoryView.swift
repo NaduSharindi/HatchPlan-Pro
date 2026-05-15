@@ -209,7 +209,7 @@ struct ManagerDetailedBatchHistoryView: View {
 
             HStack(spacing: 12) {
                 timelineCard(icon: "calendar.badge.plus", title: "EGG SET DATE", value: "Oct 20, 2023", color: .hatchGreen)
-                timelineCard(icon: "egg.fill", title: "HATCH DATE", value: "Nov 10, 2023", color: .hatchOrange)
+                timelineCard(icon: "oval.portrait.fill", title: "HATCH DATE", value: "Nov 10, 2023", color: .hatchOrange)
             }
         }
     }

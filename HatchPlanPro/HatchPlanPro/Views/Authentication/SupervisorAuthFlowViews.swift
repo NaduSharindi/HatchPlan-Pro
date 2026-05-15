@@ -78,7 +78,7 @@ struct SupervisorOnboardingView: View {
 
     private let pages: [(title: String, body: String, image: String)] = [
         ("AI-Driven Decisions", "Optimize hatchery performance with predictive analytics and automated risk assessment tools.", "brain.head.profile"),
-        ("Precision Incubation", "Monitor temperature, humidity, and batch health across every room in real time.", "egg.fill"),
+        ("Precision Incubation", "Monitor temperature, humidity, and batch health across every room in real time.", "oval.portrait.fill"),
         ("Instant Security", "Approve access quickly with Face ID, Touch ID, and a supervisor PIN fallback.", "lock.shield.fill")
     ]
 
