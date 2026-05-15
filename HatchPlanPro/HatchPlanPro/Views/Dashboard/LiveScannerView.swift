@@ -24,8 +24,27 @@ struct LiveScannerView: View {
     var body: some View {
         ZStack {
             // MARK: - Camera Preview
-            CameraPreviewView(cameraManager: cameraManager)
-                .ignoresSafeArea()
+            if cameraManager.isSimulator {
+                // Simulator placeholder
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        Image(systemName: "camera.viewfinder")
+                            .font(.system(size: 60))
+                            .foregroundColor(.hatchGreen.opacity(0.6))
+                        Text("SIMULATOR MODE")
+                            .font(.system(size: 14, weight: .bold))
+                            .kerning(2)
+                            .foregroundColor(.white.opacity(0.5))
+                        Text("Camera preview requires a physical device")
+                            .font(.caption)
+                            .foregroundColor(.white.opacity(0.3))
+                    }
+                }
+            } else {
+                CameraPreviewView(cameraManager: cameraManager)
+                    .ignoresSafeArea()
+            }
             
             // MARK: - Dark overlay with transparent center
             VStack {
@@ -315,10 +334,21 @@ struct LiveScannerView: View {
 // MARK: - Camera Manager
 class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
     @Published var session = AVCaptureSession()
+    @Published var isCameraAvailable = false
     private let output = AVCaptureVideoDataOutput()
     private let queue = DispatchQueue(label: "camera.queue")
     
+    #if targetEnvironment(simulator)
+    let isSimulator = true
+    #else
+    let isSimulator = false
+    #endif
+    
     func requestCameraAccess() {
+        guard !isSimulator else {
+            print("[CameraManager] Running on Simulator — camera not available")
+            return
+        }
         AVCaptureDevice.requestAccess(for: .video) { granted in
             if granted {
                 self.setupCamera()
@@ -330,6 +360,7 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
         session.sessionPreset = .photo
         
         guard let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+            print("[CameraManager] No back camera found")
             return
         }
         
@@ -343,20 +374,32 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 session.addOutput(output)
                 output.setSampleBufferDelegate(self, queue: queue)
             }
+            
+            DispatchQueue.main.async {
+                self.isCameraAvailable = true
+            }
         } catch {
-            print("Error setting up camera: \(error)")
+            print("[CameraManager] Error setting up camera: \(error)")
         }
     }
     
     func startSession() {
-        if !session.isRunning {
-            session.startRunning()
+        guard !isSimulator else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            if !self.session.isRunning {
+                self.session.startRunning()
+            }
         }
     }
     
     func stopSession() {
-        if session.isRunning {
-            session.stopRunning()
+        guard !isSimulator else { return }
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            guard let self = self else { return }
+            if self.session.isRunning {
+                self.session.stopRunning()
+            }
         }
     }
     
@@ -369,7 +412,7 @@ class CameraManager: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleB
                 device.torchMode = on ? .on : .off
                 device.unlockForConfiguration()
             } catch {
-                print("Error toggling flash: \(error)")
+                print("[CameraManager] Error toggling flash: \(error)")
             }
         }
     }
