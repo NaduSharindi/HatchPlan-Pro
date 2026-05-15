@@ -8,8 +8,10 @@
 //
 
 import Foundation
+import Combine
 import UserNotifications
 import FirebaseMessaging
+import FirebaseFirestore
 
 /// Handles push notification registration and local notification scheduling
 /// for HatchPlan Pro. Supports both remote (FCM) and local notifications.
@@ -141,4 +143,3 @@ final class PushNotificationService: NSObject, ObservableObject {
     }
 }
 
-import FirebaseFirestore
