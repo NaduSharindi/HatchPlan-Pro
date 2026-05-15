@@ -4,10 +4,13 @@ import SwiftUI
 
 struct SupervisorBatchInsight: Identifiable {
     let id: String
+    let batchID: String
     let breed: String
     let date: String
     let status: String
+    let statusCode: BatchStatus
     let statusColor: Color
+    let targetChicks: Int
 }
 
 class SupervisorBatchesViewModel: ObservableObject {
@@ -20,22 +23,22 @@ class SupervisorBatchesViewModel: ObservableObject {
     @Published var reviewMessage: String = "Reviews by Manager Sarah & Ops Lead Mike"
     
     func loadData(from session: AppSessionViewModel) {
-        // Normally you'd parse from session.batchInsights. We'll simulate grouping based on UI expectations.
-        self.approvedBatches = [
-            SupervisorBatchInsight(id: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen),
-            SupervisorBatchInsight(id: "#B1028", breed: "Cobb 500", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen)
-        ]
-        
-        self.pendingBatches = [
-            SupervisorBatchInsight(id: "#B1029", breed: "Ross 708", date: "Oct 24, 2023", status: "PENDING", statusColor: Color(hex: "#FFA500"))
-        ]
-        
-        self.rejectedBatches = [
-            SupervisorBatchInsight(id: "#B1022", breed: "Lohmann Brown", date: "Oct 24, 2023", status: "REJECTED", statusColor: Color(hex: "#FF6B6B"))
-        ]
-        
-        self.syncedBatches = [
-            SupervisorBatchInsight(id: "#B1020", breed: "Hubbard Efficiency Plus", date: "Oct 24, 2023", status: "SYNCED", statusColor: .hatchGreen)
-        ]
+        let plans = session.hatchPlans
+
+        approvedBatches = plans.filter { $0.status == .approvedReady || $0.status == .synced }.map {
+            SupervisorBatchInsight(id: $0.batchID, batchID: $0.batchID, breed: $0.breed, date: $0.eggSetDate, status: $0.status.displayName, statusCode: $0.status, statusColor: $0.status.color, targetChicks: $0.targetChicks)
+        }
+
+        pendingBatches = plans.filter { $0.status == .pendingReview }.map {
+            SupervisorBatchInsight(id: $0.batchID, batchID: $0.batchID, breed: $0.breed, date: $0.eggSetDate, status: $0.status.displayName, statusCode: $0.status, statusColor: $0.status.color, targetChicks: $0.targetChicks)
+        }
+
+        rejectedBatches = plans.filter { $0.status == .rejected }.map {
+            SupervisorBatchInsight(id: $0.batchID, batchID: $0.batchID, breed: $0.breed, date: $0.eggSetDate, status: $0.status.displayName, statusCode: $0.status, statusColor: $0.status.color, targetChicks: $0.targetChicks)
+        }
+
+        syncedBatches = plans.filter { $0.status == .synced }.map {
+            SupervisorBatchInsight(id: $0.batchID, batchID: $0.batchID, breed: $0.breed, date: $0.eggSetDate, status: $0.status.displayName, statusCode: $0.status, statusColor: $0.status.color, targetChicks: $0.targetChicks)
+        }
     }
 }

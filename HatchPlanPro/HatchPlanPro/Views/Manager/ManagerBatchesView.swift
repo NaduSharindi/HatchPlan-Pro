@@ -3,12 +3,23 @@ import SwiftUI
 struct ManagerApprovalsView: View {
     @EnvironmentObject private var session: AppSessionViewModel
 
-    private let approvals: [ManagerApprovalItem] = [
-        .init(name: "Nadunika", batchID: "#B1024", location: "Meegoda", requestedAt: "09:41 AM", chicksNeeded: "12.5k chicks needed", avatarSeed: "N", isUrgent: true),
-        .init(name: "Marcus Thorne", batchID: "#B1025", location: "Kosgama", requestedAt: "08:15 AM", chicksNeeded: "12.5k chicks needed", avatarSeed: "M", isUrgent: false),
-        .init(name: "Elena Rodriguez", batchID: "#A9982", location: "Meegoda", requestedAt: "Yesterday • 04:30 PM", chicksNeeded: "12.5k chicks needed", avatarSeed: "E", isUrgent: false),
-        .init(name: "Jin Wei", batchID: "#B1020", location: "Halwatura", requestedAt: "Oct 24 • 11:20 AM", chicksNeeded: "12.5k chicks needed", avatarSeed: "J", isUrgent: false)
-    ]
+    private var pendingItems: [ManagerApprovalItem] {
+        session.pendingPlans.map { plan in
+            ManagerApprovalItem(plan: plan, isUrgent: true)
+        }
+    }
+
+    private var approvedItems: [ManagerApprovalItem] {
+        session.approvedPlans.map { plan in
+            ManagerApprovalItem(plan: plan, isUrgent: false)
+        }
+    }
+
+    private var rejectedItems: [ManagerApprovalItem] {
+        session.rejectedPlans.map { plan in
+            ManagerApprovalItem(plan: plan, isUrgent: false)
+        }
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -20,19 +31,14 @@ struct ManagerApprovalsView: View {
                         .font(.caption.weight(.bold))
                         .tracking(1.8)
                         .foregroundColor(.hatchOrange)
-                    Text("8 Pending")
+                    Text("\(pendingItems.count) Pending")
                         .font(.system(size: 42, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
                 }
 
-                VStack(spacing: 14) {
-                    ForEach(approvals) { item in
-                        NavigationLink(destination: ManagerApprovalPlanView()) {
-                            ApprovalRowView(item: item)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                approvalSection(title: "PENDING QUEUE", items: pendingItems, showActions: true)
+                approvalSection(title: "APPROVED LIST", items: approvedItems, showActions: false)
+                approvalSection(title: "REJECTED LIST", items: rejectedItems, showActions: false)
 
                 bulkReviewCard
             }
@@ -42,6 +48,34 @@ struct ManagerApprovalsView: View {
         }
         .background(Color.hatchSurface.ignoresSafeArea())
         .navigationBarHidden(true)
+    }
+
+    private func approvalSection(title: String, items: [ManagerApprovalItem], showActions: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .tracking(1.4)
+                    .foregroundColor(.secondary)
+                Spacer()
+                Text("\(items.count)")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            VStack(spacing: 14) {
+                ForEach(items) { item in
+                    if showActions, let plan = item.plan {
+                        NavigationLink(destination: ManagerApprovalPlanView(plan: plan)) {
+                            ApprovalRowView(item: item)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        ApprovalRowView(item: item)
+                    }
+                }
+            }
+        }
     }
 
     private var header: some View {
@@ -80,7 +114,7 @@ struct ManagerApprovalsView: View {
                 .foregroundColor(.white.opacity(0.72))
                 .fixedSize(horizontal: false, vertical: true)
 
-            Button(action: {}) {
+            Button(action: { session.approveAllPendingPlans(reviewedBy: session.currentUser.fullName) }) {
                 Text("Start Batch Approval")
                     .font(.headline.weight(.semibold))
                     .foregroundColor(.hatchGreenDeep)
@@ -109,6 +143,18 @@ private struct ManagerApprovalItem: Identifiable {
     let chicksNeeded: String
     let avatarSeed: String
     let isUrgent: Bool
+    let plan: HatchPlanRecord?
+
+    init(plan: HatchPlanRecord, isUrgent: Bool) {
+        self.name = plan.createdBy
+        self.batchID = plan.batchID
+        self.location = plan.location
+        self.requestedAt = plan.createdAt.formatted(date: .abbreviated, time: .shortened)
+        self.chicksNeeded = "\(plan.targetChicks.formatted()) chicks needed"
+        self.avatarSeed = String(plan.createdBy.prefix(1))
+        self.isUrgent = isUrgent
+        self.plan = plan
+    }
 }
 
 private struct ApprovalRowView: View {

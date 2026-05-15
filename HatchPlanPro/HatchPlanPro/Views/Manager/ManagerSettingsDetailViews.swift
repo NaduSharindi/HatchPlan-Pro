@@ -1,9 +1,9 @@
 import SwiftUI
+import Combine
 
 struct ManagerAccessibilityView: View {
+    @EnvironmentObject private var session: AppSessionViewModel
     @State private var highContrastEnabled = true
-    @State private var textScale: Double = 1.0
-    @State private var voiceOverEnabled = false
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -25,7 +25,7 @@ struct ManagerAccessibilityView: View {
                         }
 
                         Text("The biological precision of HatchPlan Pro ensures every batch is tracked with surgical accuracy.")
-                            .font(.system(size: 16 * textScale, weight: .medium, design: .rounded))
+                            .font(.system(size: 16 * session.accessibilityTextScale, weight: .medium, design: .rounded))
                             .foregroundColor(.primary)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: .infinity)
@@ -36,7 +36,7 @@ struct ManagerAccessibilityView: View {
                             Text("T")
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(.secondary)
-                            Slider(value: $textScale, in: 0.85...1.35)
+                            Slider(value: Binding(get: { session.accessibilityTextScale }, set: { session.setAccessibilityTextScale($0) }), in: 0.85...1.35)
                                 .tint(.hatchGreen)
                             Text("T")
                                 .font(.title2.weight(.semibold))
@@ -54,7 +54,7 @@ struct ManagerAccessibilityView: View {
                 sectionLabel("INTERACTION")
 
                 VStack(spacing: 0) {
-                    toggleRow(icon: "person.wave.2.fill", iconColor: Color(hex: "#922D60"), title: "VoiceOver", isOn: $voiceOverEnabled)
+                    toggleRow(icon: "person.wave.2.fill", iconColor: Color(hex: "#922D60"), title: "VoiceOver", isOn: Binding(get: { session.accessibilityVoiceOverEnabled }, set: { session.accessibilityVoiceOverEnabled = $0 }))
                     Text("VoiceOver speaks items on the screen to help you navigate without seeing them.")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -117,8 +117,7 @@ struct ManagerAccessibilityView: View {
 }
 
 struct ManagerBiometricSecurityView: View {
-    @State private var faceIDEnabled = true
-    @State private var touchIDEnabled = false
+    @EnvironmentObject private var session: AppSessionViewModel
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -147,8 +146,8 @@ struct ManagerBiometricSecurityView: View {
                 }
 
                 VStack(spacing: 10) {
-                    biometricRow(icon: "faceid", title: "Enable Face ID", subtitle: "Use for app entry", tint: .hatchGreen, isOn: $faceIDEnabled)
-                    biometricRow(icon: "touchid", title: "Enable Touch ID", subtitle: "Use for app entry", tint: .gray, isOn: $touchIDEnabled)
+                    biometricRow(icon: "faceid", title: "Enable Face ID", subtitle: "Use for app entry", tint: .hatchGreen, isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
+                    biometricRow(icon: "touchid", title: "Enable Touch ID", subtitle: "Use for app entry", tint: .gray, isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
                 }
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -463,17 +462,13 @@ struct ManagerTermsView: View {
 
                 VStack(spacing: 10) {
                     ForEach(termsBlocks, id: \.title) { block in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(block.title)
-                                .font(.headline)
-                                .foregroundColor(.hatchGreen)
-                            Text(block.body)
-                                .font(.subheadline)
-                                .foregroundColor(.secondary)
-                        }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#F5F6F8")))
+                        Text(block.body)
+                            .font(.body)
+                            .foregroundColor(.primary)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#F5F6F8")))
                     }
                 }
 
@@ -623,17 +618,10 @@ struct ManagerAccountDetailsView: View {
                 ManagerDetailHeader(title: "Account Details")
 
                 VStack(spacing: 6) {
-                    ZStack(alignment: .bottomTrailing) {
-                        Circle()
-                            .fill(LinearGradient(colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.8)], startPoint: .top, endPoint: .bottom))
-                            .frame(width: 110, height: 110)
-                            .overlay(Image(systemName: "person.fill").font(.system(size: 44)).foregroundColor(.white))
-
-                        Circle()
-                            .fill(Color.hatchGreen)
-                            .frame(width: 28, height: 28)
-                            .overlay(Image(systemName: "pencil").font(.caption).foregroundColor(.white))
-                    }
+                    Circle()
+                        .fill(LinearGradient(colors: [Color.gray.opacity(0.5), Color.gray.opacity(0.8)], startPoint: .top, endPoint: .bottom))
+                        .frame(width: 110, height: 110)
+                        .overlay(Image(systemName: "person.fill").font(.system(size: 44)).foregroundColor(.white))
 
                     Text("Supervisor Nadunika")
                         .font(.system(size: 36, weight: .bold, design: .rounded))

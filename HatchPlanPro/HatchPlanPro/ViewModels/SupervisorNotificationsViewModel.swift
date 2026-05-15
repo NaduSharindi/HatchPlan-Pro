@@ -21,20 +21,35 @@ class SupervisorNotificationsViewModel: ObservableObject {
     @Published var sections: [NotificationSection] = []
     
     func loadData(from session: AppSessionViewModel) {
-        // Ideally mapped from session.supervisorNotifications, 
-        // using mock structured data here for the UI match
-        self.sections = [
-            NotificationSection(title: "TODAY", notifications: [
-                NotificationSectionItem(type: "CRITICAL ALERT", icon: "exclamationmark.circle.fill", iconBg: Color(hex: "#FFA500"), title: "Batch #B1024 is 24 hours from hatching. Resource allocation required.", time: "2m ago"),
-                NotificationSectionItem(type: "APPROVAL UPDATE", icon: "checkmark.circle.fill", iconBg: .hatchGreen, title: "Plan for Batch #B1030 has been Approved by Manager Aruni.", time: "1h ago")
-            ]),
-            NotificationSection(title: "LAST WEEK", notifications: [
-                NotificationSectionItem(type: "SYSTEM MESSAGE", icon: "gearshape.fill", iconBg: Color(hex: "#A0A0A0"), title: "Sensor Calibration Sync completed for Incubation Hall B.", time: "Yesterday"),
-                NotificationSectionItem(type: "WEEKLY REPORT", icon: "chart.bar.fill", iconBg: Color(hex: "#8B7355"), title: "Performance summary for Hall A is now available. Hatch rate increased by 4.2%.", time: "2 days ago")
-            ]),
-            NotificationSection(title: "EARLIER", notifications: [
-                NotificationSectionItem(type: "SYSTEM MESSAGE", icon: "gearshape.fill", iconBg: Color(hex: "#A0A0A0"), title: "Routine backup completed successfully.", time: "1 week ago")
-            ])
-        ]
+        let notifications = session.supervisorNotifications
+
+        guard !notifications.isEmpty else {
+            sections = []
+            return
+        }
+
+        let grouped = Dictionary(grouping: notifications) { notification in
+            let hoursSince = Date().timeIntervalSince(notification.timestamp) / 3600
+            if hoursSince < 24 {
+                return "TODAY"
+            } else if hoursSince < 168 {
+                return "LAST WEEK"
+            } else {
+                return "EARLIER"
+            }
+        }
+
+        sections = ["TODAY", "LAST WEEK", "EARLIER"].compactMap { key in
+            guard let items = grouped[key], !items.isEmpty else { return nil }
+            return NotificationSection(title: key, notifications: items.map { notification in
+                NotificationSectionItem(
+                    type: notification.type.displayName,
+                    icon: notification.type.iconName,
+                    iconBg: notification.type == .criticalAlert ? Color(hex: "#FFA500") : (notification.type == .approvalUpdate ? .hatchGreen : Color(hex: "#A0A0A0")),
+                    title: notification.title,
+                    time: notification.timeLabel
+                )
+            })
+        }
     }
 }

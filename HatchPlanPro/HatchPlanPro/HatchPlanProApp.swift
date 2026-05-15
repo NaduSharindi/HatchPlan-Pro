@@ -81,6 +81,7 @@ struct HatchPlanProApp: App {
             }
             .environmentObject(session)
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
+            .environment(\.dynamicTypeSize, session.preferredDynamicTypeSize)
         }
     }
 }

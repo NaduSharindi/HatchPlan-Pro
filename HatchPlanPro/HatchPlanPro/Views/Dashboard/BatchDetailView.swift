@@ -17,6 +17,7 @@ struct BatchDetailView: View {
     let date: String
     let status: String
     let statusColor: Color
+    let canExecute: Bool
 
     @State private var showExecuteSheet = false
     @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 6.9319, longitude: 79.8478), span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06))
@@ -162,21 +163,22 @@ struct BatchDetailView: View {
                 }
             }
 
-            // Execute Set Button
-            Button(action: { showExecuteSheet = true }) {
-                HStack(spacing: 8) {
-                    Image(systemName: "bolt.fill")
-                    Text("Execute Set")
+            if canExecute {
+                Button(action: { showExecuteSheet = true }) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "bolt.fill")
+                        Text("Execute Set")
+                    }
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(Color.hatchGreen))
+                    .padding(16)
                 }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(RoundedRectangle(cornerRadius: 12).fill(Color.hatchGreen))
-                .padding(16)
-            }
-            .sheet(isPresented: $showExecuteSheet) {
-                ExecuteSetSheetView(batchID: batchID)
-                    .environmentObject(session)
+                .sheet(isPresented: $showExecuteSheet) {
+                    ExecuteSetSheetView(batchID: batchID)
+                        .environmentObject(session)
+                }
             }
         }
         .background(Color.hatchSurface.ignoresSafeArea())
@@ -249,6 +251,6 @@ struct MapPin: Identifiable {
 }
 
 #Preview {
-    BatchDetailView(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen)
+    BatchDetailView(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: "APPROVED", statusColor: .hatchGreen, canExecute: true)
         .environmentObject(AppSessionViewModel())
 }

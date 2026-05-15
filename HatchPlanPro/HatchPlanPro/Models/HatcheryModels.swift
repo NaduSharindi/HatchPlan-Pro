@@ -196,6 +196,25 @@ struct BatchInsight: Identifiable, Codable, Hashable {
     }
 }
 
+struct HatchPlanRecord: Identifiable, Codable, Hashable {
+    let id: String = UUID().uuidString
+    let batchID: String
+    let breed: String
+    let targetChicks: Int
+    let eggSetDate: String
+    let hatchDate: String
+    var status: BatchStatus
+    let createdBy: String
+    let createdAt: Date
+    var reviewedBy: String?
+    var rejectionReason: String?
+    var location: String
+
+    enum CodingKeys: String, CodingKey {
+        case id, batchID, breed, targetChicks, eggSetDate, hatchDate, status, createdBy, createdAt, reviewedBy, rejectionReason, location
+    }
+}
+
 struct ScheduledBatch: Identifiable, Codable, Hashable {
     let id: String
     let batchID: String

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct SupervisorSettingsView: View {
     @EnvironmentObject private var session: AppSessionViewModel
@@ -21,7 +22,7 @@ struct SupervisorSettingsView: View {
                     .padding(.horizontal, 20)
 
                     // MARK: - Profile Section
-                    VStack(alignment: .leading, spacing: 12) {
+                    NavigationLink(destination: SupervisorProfileView()) {
                         HStack(spacing: 12) {
                             Image(systemName: "person.fill")
                                 .font(.title3)
@@ -89,12 +90,6 @@ struct SupervisorSettingsView: View {
                         }
                         NavigationLink(destination: SupervisorContactSupportView()) {
                             supportRow(icon: "headphones", title: "Contact Support")
-                        }
-                        NavigationLink(destination: SupervisorTermsView()) {
-                            supportRow(icon: "doc.text.fill", title: "Terms of Service")
-                        }
-                        NavigationLink(destination: SupervisorPrivacyView()) {
-                            supportRow(icon: "hand.raised.fill", title: "Privacy Policy")
                         }
                     }
                     .supervisorCard()
@@ -197,8 +192,7 @@ struct SupervisorSettingsView: View {
 // MARK: - Accessibility Settings
 struct SupervisorAccessibilityView: View {
     @State private var highContrastEnabled = false
-    @State private var textSizeMultiplier: CGFloat = 1.0
-    @State private var voiceOverEnabled = false
+    @EnvironmentObject private var session: AppSessionViewModel
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -241,7 +235,7 @@ struct SupervisorAccessibilityView: View {
                                     Text("T")
                                         .font(.caption2)
                                         .foregroundColor(.secondary)
-                                    Slider(value: $textSizeMultiplier, in: 0.8...1.5)
+                                    Slider(value: Binding(get: { session.accessibilityTextScale }, set: { session.setAccessibilityTextScale($0) }), in: 0.85...1.45)
                                         .tint(.hatchGreen)
                                     Text("T")
                                         .font(.title2)
@@ -280,7 +274,7 @@ struct SupervisorAccessibilityView: View {
                                 .font(.body)
                                 .foregroundColor(.hatchGreen)
                             Spacer()
-                            Toggle("", isOn: $voiceOverEnabled)
+                            Toggle("", isOn: Binding(get: { session.accessibilityVoiceOverEnabled }, set: { session.accessibilityVoiceOverEnabled = $0 }))
                                 .tint(.hatchGreen)
                         }
                         .padding()
@@ -319,8 +313,7 @@ struct SupervisorAccessibilityView: View {
 
 // MARK: - Biometric Settings
 struct SupervisorBiometricSettingsView: View {
-    @State private var faceIDEnabled = true
-    @State private var touchIDEnabled = false
+    @EnvironmentObject private var session: AppSessionViewModel
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -370,7 +363,7 @@ struct SupervisorBiometricSettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
-                            Toggle("", isOn: $faceIDEnabled)
+                            Toggle("", isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
                                 .tint(.hatchGreen)
                         }
                         .padding()
@@ -392,7 +385,7 @@ struct SupervisorBiometricSettingsView: View {
                                     .foregroundColor(.secondary)
                             }
                             Spacer()
-                            Toggle("", isOn: $touchIDEnabled)
+                            Toggle("", isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
                                 .tint(.secondary)
                         }
                         .padding()
@@ -728,7 +721,7 @@ struct SupervisorContactSupportView: View {
                         }
 
                         Text("Talk to a Specialist")
-                            .font(.headline.bold())
+                            .font(.title2.bold())
                             .foregroundColor(.white)
 
                         Text("Our industrial poultry experts are online and ready to assist with your hatchery optimization.")

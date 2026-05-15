@@ -2,19 +2,15 @@ import SwiftUI
 import MapKit
 
 struct ManagerMapView: View {
+    @EnvironmentObject private var session: AppSessionViewModel
     @State private var region = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 6.9319, longitude: 79.8478),
         span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06)
     )
 
-    private let mapPins = [
-        ManagerMapPin(coordinate: CLLocationCoordinate2D(latitude: 6.9322, longitude: 79.8472)),
-        ManagerMapPin(coordinate: CLLocationCoordinate2D(latitude: 6.9312, longitude: 79.8490))
-    ]
-
     var body: some View {
         ZStack(alignment: .top) {
-            Map(coordinateRegion: $region, interactionModes: .all, annotationItems: mapPins) { pin in
+            Map(coordinateRegion: $region, interactionModes: .all, annotationItems: session.pendingPlans.isEmpty ? [] : [ManagerMapPin(coordinate: region.center)]) { pin in
                 MapMarker(coordinate: pin.coordinate, tint: .hatchGreen)
             }
             .ignoresSafeArea()
@@ -28,9 +24,15 @@ struct ManagerMapView: View {
 
                 Spacer()
 
-                approvalCard
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 34)
+                if let plan = session.pendingPlans.first {
+                    approvalCard(plan: plan)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 34)
+                } else {
+                    emptyMapState
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 34)
+                }
 
                 Spacer(minLength: 110)
             }
@@ -66,7 +68,7 @@ struct ManagerMapView: View {
         .background(Color.white.opacity(0.96))
     }
 
-    private var approvalCard: some View {
+    private func approvalCard(plan: HatchPlanRecord) -> some View {
         VStack(alignment: .leading, spacing: 18) {
             Capsule()
                 .fill(Color.secondary.opacity(0.25))
@@ -79,7 +81,7 @@ struct ManagerMapView: View {
                         .font(.caption.weight(.bold))
                         .tracking(1.6)
                         .foregroundColor(.hatchGreen)
-                    Text("Plan Review:\n#B1024, Meegoda")
+                    Text("Plan Review:\n\(plan.batchID), \(plan.location)")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(.primary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -91,7 +93,7 @@ struct ManagerMapView: View {
                     Text("TARGET CHICKS")
                         .font(.caption.weight(.bold))
                         .foregroundColor(.secondary)
-                    Text("11000 CHICKS")
+                    Text("\(plan.targetChicks) CHICKS")
                         .font(.title3.weight(.bold))
                         .foregroundColor(.hatchGreen)
                 }
@@ -104,7 +106,7 @@ struct ManagerMapView: View {
                 metricTile(title: "15%", subtitle: "BUFFER APPLIED", icon: "chart.bar.fill", accent: Color.hatchOrangeSoft, tint: .hatchOrange)
             }
 
-            NavigationLink(destination: ManagerApprovalPlanView()) {
+            NavigationLink(destination: ManagerApprovalPlanView(plan: session.pendingPlans.first)) {
                 Text("View Plan Details >")
                     .font(.headline.weight(.semibold))
                     .foregroundColor(.hatchGreen)
@@ -113,13 +115,34 @@ struct ManagerMapView: View {
             .padding(.top, 2)
 
             HStack(spacing: 14) {
-                actionButton(title: "Reject", systemImage: "xmark", foreground: .red, background: .white, border: Color.red.opacity(0.25))
-                actionButton(title: "Approve", systemImage: "checkmark", foreground: .white, background: .hatchGreen, border: .hatchGreen)
+                actionButton(title: "Reject", systemImage: "xmark", foreground: .red, background: .white, border: Color.red.opacity(0.25)) {
+                    session.rejectPlan(batchID: plan.batchID)
+                }
+                actionButton(title: "Approve", systemImage: "checkmark", foreground: .white, background: .hatchGreen, border: .hatchGreen) {
+                    session.approvePlan(batchID: plan.batchID)
+                }
             }
         }
         .padding(18)
         .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Color.white))
         .shadow(color: .black.opacity(0.10), radius: 20, x: 0, y: 12)
+    }
+
+    private var emptyMapState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "map.fill")
+                .font(.system(size: 32, weight: .semibold))
+                .foregroundColor(.hatchGreen)
+            Text("No plans yet")
+                .font(.headline.weight(.semibold))
+            Text("When a supervisor submits a plan, it will appear here for location-based review.")
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
+        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Color.white))
     }
 
     private func metricTile(title: String, subtitle: String, icon: String, accent: Color, tint: Color) -> some View {
@@ -141,7 +164,7 @@ struct ManagerMapView: View {
         .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(accent))
     }
 
-    private func actionButton(title: String, systemImage: String, foreground: Color, background: Color, border: Color) -> some View {
+    private func actionButton(title: String, systemImage: String, foreground: Color, background: Color, border: Color, action: @escaping () -> Void) -> some View {
         HStack(spacing: 8) {
             Image(systemName: systemImage)
             Text(title)
@@ -152,6 +175,7 @@ struct ManagerMapView: View {
         .padding(.vertical, 16)
         .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(background))
         .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(border, lineWidth: background == .white ? 1.5 : 0))
+        .onTapGesture(perform: action)
     }
 }
 

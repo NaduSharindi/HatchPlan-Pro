@@ -21,13 +21,18 @@ struct SupervisorHomeView: View {
                         }
                         Spacer()
                         HStack(spacing: 12) {
-                            Image(systemName: "bell.fill")
-                                .foregroundColor(.hatchGreen)
-                                .padding(10)
-                                .background(Circle().fill(Color.hatchGreenSoft))
-                            Image(systemName: "person.crop.circle.fill")
-                                .font(.title)
-                                .foregroundColor(.hatchGreen)
+                            NavigationLink(destination: SupervisorNotificationsView()) {
+                                Image(systemName: "bell.fill")
+                                    .foregroundColor(.hatchGreen)
+                                    .padding(10)
+                                    .background(Circle().fill(Color.hatchGreenSoft))
+                            }
+
+                            NavigationLink(destination: SupervisorProfileView()) {
+                                Image(systemName: "person.crop.circle.fill")
+                                    .font(.title)
+                                    .foregroundColor(.hatchGreen)
+                            }
                         }
                     }
                     .padding(.horizontal, 20)
@@ -130,6 +135,46 @@ struct SupervisorHomeView: View {
                     .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
                     .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
                     .padding(.horizontal, 16)
+
+                    if session.hasTodaySchedule {
+                        VStack(alignment: .leading, spacing: 10) {
+                            HStack {
+                                Text("TODAY'S WIDGET")
+                                    .font(.caption.weight(.bold))
+                                    .kerning(1)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text("Live schedule")
+                                    .font(.caption2.weight(.semibold))
+                                    .foregroundColor(.hatchGreen)
+                            }
+
+                            ForEach(session.todayScheduledBatches.prefix(2)) { batch in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(batch.batchID)
+                                            .font(.headline)
+                                            .foregroundColor(.hatchGreen)
+                                        Text("\(batch.time) \(batch.timeOfDay) • \(batch.breed)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    Text(batch.status.isEmpty ? "SCHEDULED" : batch.status)
+                                        .font(.caption2.weight(.bold))
+                                        .padding(.vertical, 4)
+                                        .padding(.horizontal, 8)
+                                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(batch.statusColor))
+                                }
+                                .padding()
+                                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color.white))
+                            }
+                        }
+                        .padding(16)
+                        .background(RoundedRectangle(cornerRadius: 20, style: .continuous).fill(.white))
+                        .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
+                        .padding(.horizontal, 16)
+                    }
 
                     // MARK: - Facility Health
                     VStack(alignment: .leading, spacing: 12) {

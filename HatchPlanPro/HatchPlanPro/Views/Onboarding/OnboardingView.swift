@@ -32,14 +32,8 @@ struct OnboardingView: View {
                         VStack(spacing: 24) {
                             Spacer()
                             
-                            // Placeholder icon until you add custom Figma images
-                            Image(systemName: pages[index].systemImage)
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 150, height: 150)
-                                .foregroundColor(.figmaPrimary)
-                                .padding(.bottom, 30)
-                                .accessibilityHidden(true)
+                            AppLogoView(size: 112)
+                                .padding(.bottom, 20)
                             
                             Text(pages[index].title)
                                 .font(.title)

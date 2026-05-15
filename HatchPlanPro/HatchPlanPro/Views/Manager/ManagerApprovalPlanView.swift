@@ -5,10 +5,12 @@ struct ManagerApprovalPlanView: View {
     @EnvironmentObject var session: AppSessionViewModel
     @Environment(\.dismiss) var dismiss
 
-    var batchID: String = "#B1024"
-    var date: String = "Oct 24, 2023"
-    var status: String = "PENDING"
-    var statusColor: Color = Color(hex: "#F4C542")
+    let plan: HatchPlanRecord?
+
+    private var batchID: String { plan?.batchID ?? "#B1024" }
+    private var date: String { plan?.eggSetDate ?? "Oct 24, 2023" }
+    private var status: String { plan?.status.displayName ?? "PENDING" }
+    private var statusColor: Color { plan?.status.color ?? Color(hex: "#F4C542") }
 
     @State private var region = MKCoordinateRegion(center: CLLocationCoordinate2D(latitude: 6.9319, longitude: 79.8478), span: MKCoordinateSpan(latitudeDelta: 0.06, longitudeDelta: 0.06))
 
@@ -16,7 +18,10 @@ struct ManagerApprovalPlanView: View {
         VStack(spacing: 16) {
             // Header
             HStack {
-                Button(action: { dismiss() }) {
+                Button(action: {
+                    session.rejectPlan(batchID: batchID)
+                    dismiss()
+                }) {
                     Image(systemName: "arrow.left")
                         .font(.title3.weight(.bold))
                         .foregroundColor(.hatchGreen)
@@ -199,7 +204,10 @@ struct ManagerApprovalPlanView: View {
                     .background(RoundedRectangle(cornerRadius: 14).fill(Color.gray.opacity(0.15)))
                 }
                 
-                NavigationLink(destination: ManagerPlanApprovedView()) {
+                Button(action: {
+                    session.approvePlan(batchID: batchID, reviewedBy: session.currentUser.fullName)
+                    dismiss()
+                }) {
                     HStack {
                         Image(systemName: "checkmark.circle")
                         Text("Approve Plan")
@@ -299,7 +307,7 @@ struct ManagerPlanMapPin: Identifiable {
 
 #Preview {
     NavigationStack {
-        ManagerApprovalPlanView()
+        ManagerApprovalPlanView(plan: nil)
             .environmentObject(AppSessionViewModel())
     }
 }

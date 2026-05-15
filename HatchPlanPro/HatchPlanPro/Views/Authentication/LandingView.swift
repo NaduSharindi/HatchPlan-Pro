@@ -11,7 +11,7 @@ struct LandingView: View {
     @EnvironmentObject private var session: AppSessionViewModel
 
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 // Background color from Figma
                 Color.figmaBackground
@@ -21,29 +21,14 @@ struct LandingView: View {
                     
                     Spacer()
                     
-                    // MARK: - Header Section
                     VStack(spacing: 8) {
-                        // Add your Figma Logo Image here later
-                        Image(systemName: "bird.fill")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 80, height: 80)
-                            .foregroundColor(.figmaPrimary)
-                            .accessibilityHidden(true)
-                        
-                        Text("HatchPlan Pro")
-                            .font(.largeTitle)
-                            .fontWeight(.bold)
-                            .foregroundColor(.figmaTextDark)
-                            .accessibilityAddTraits(.isHeader)
+                        AppLogoView(size: 88, title: "HatchPlan Pro", subtitle: "Precision poultry management")
                         
                         Text("Select your role to continue")
                             .font(.subheadline)
                             .foregroundColor(.gray)
                     }
                     
-                    // MARK: - Role Selection Buttons
-                    // MARK: - Role Selection Buttons
                     VStack(spacing: 20) {
                         NavigationLink(destination: SupervisorSplashView()) {
                             RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)

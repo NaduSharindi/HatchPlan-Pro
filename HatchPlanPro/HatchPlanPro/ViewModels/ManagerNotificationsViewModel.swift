@@ -42,12 +42,7 @@ class ManagerNotificationsViewModel: ObservableObject {
     /// and organises them into sections.
     func loadData(from session: AppSessionViewModel) {
         isLoading = true
-        
-        // Trigger fetch from Firebase
         session.fetchManagerNotifications()
-        
-        // Use a short delay to let the async fetch complete,
-        // then build sections from whatever data is available.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
             guard let self = self else { return }
             self.buildSections(from: session.managerNotifications)
@@ -57,8 +52,13 @@ class ManagerNotificationsViewModel: ObservableObject {
     
     /// Builds display sections from raw notification data.
     private func buildSections(from notifications: [HatcheryNotification]) {
-        // If Firebase data is empty, use sample data
-        let items = notifications.isEmpty ? Self.sampleNotifications : notifications
+        let items = notifications
+
+        guard !items.isEmpty else {
+            sections = []
+            unreadCount = 0
+            return
+        }
         
         var todayItems: [ManagerNotificationItem] = []
         var weekItems: [ManagerNotificationItem] = []
@@ -115,14 +115,4 @@ class ManagerNotificationsViewModel: ObservableObject {
         }
     }
     
-    /// Sample notifications used when Firebase data is not yet available.
-    private static var sampleNotifications: [HatcheryNotification] {
-        [
-            HatcheryNotification(type: .criticalAlert, title: "Batch B-08 humidity spike detected. Immediate review required.", message: "Humidity exceeded threshold", timestamp: Date().addingTimeInterval(-300), timeLabel: "5 min ago"),
-            HatcheryNotification(type: .approvalUpdate, title: "Supervisor submitted Batch #C2-114 for approval.", message: "New approval request", timestamp: Date().addingTimeInterval(-1800), timeLabel: "30 min ago"),
-            HatcheryNotification(type: .systemMessage, title: "Sensor calibration completed for Incubation Hall B.", message: "System update", timestamp: Date().addingTimeInterval(-7200), timeLabel: "2h ago"),
-            HatcheryNotification(type: .weeklyReport, title: "Weekly production report: Hatch rate improved by 3.1% across all facilities.", message: "Performance report", timestamp: Date().addingTimeInterval(-86400), timeLabel: "Yesterday"),
-            HatcheryNotification(type: .systemMessage, title: "Routine backup completed successfully for all hatchery data.", message: "Backup complete", timestamp: Date().addingTimeInterval(-604800), timeLabel: "1 week ago")
-        ]
-    }
 }

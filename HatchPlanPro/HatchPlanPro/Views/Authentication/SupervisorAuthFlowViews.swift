@@ -233,8 +233,7 @@ struct SupervisorLoginView: View {
                 .accessibilityLabel("Sign in")
 
                 Button {
-                    // Biometric-only sign in — only works for returning users with existing Firebase session
-                    if FirebaseAuthService.shared.isSignedIn {
+                    if BiometricAuthService.shared.isEnabled {
                         session.chooseRole(.supervisor)
                         session.recordCredentials(email: email)
                         BiometricAuthService.shared.authenticate(reason: "Sign in to HatchPlan Pro") { result in
@@ -247,7 +246,7 @@ struct SupervisorLoginView: View {
                             }
                         }
                     } else {
-                        session.authErrorMessage = "Please sign in with email and password first."
+                        session.authErrorMessage = "Enable biometrics in Settings first, then use this button to sign in."
                         session.showAuthError = true
                     }
                 } label: {

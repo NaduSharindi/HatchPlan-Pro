@@ -14,9 +14,11 @@ struct SupervisorNotificationsView: View {
                             .font(.title2.bold())
                             .foregroundColor(.hatchGreen)
                         Spacer()
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.hatchGreen)
+                        NavigationLink(destination: SupervisorProfileView()) {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.hatchGreen)
+                        }
                     }
                     .padding(.horizontal, 20)
 

@@ -34,10 +34,11 @@ struct ManagerNotificationsView: View {
                         }
                     }
                     Spacer()
-                    Image(systemName: "bell.badge.fill")
-                        .font(.title2)
-                        .foregroundColor(.hatchGreen)
-                        .accessibilityHidden(true)
+                    NavigationLink(destination: ManagerAccountDetailsView()) {
+                        Image(systemName: "bell.badge.fill")
+                            .font(.title2)
+                            .foregroundColor(.hatchGreen)
+                    }
                 }
                 .padding(.horizontal, 20)
 

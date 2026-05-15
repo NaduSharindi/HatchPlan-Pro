@@ -14,9 +14,11 @@ struct SupervisorBatchesView: View {
                             .font(.title2.bold())
                             .foregroundColor(.hatchGreen)
                         Spacer()
-                        Image(systemName: "person.crop.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.hatchGreen)
+                        NavigationLink(destination: SupervisorProfileView()) {
+                            Image(systemName: "person.crop.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.hatchGreen)
+                        }
                     }
                     .padding(.horizontal, 20)
 
@@ -80,8 +82,10 @@ struct SupervisorBatchesView: View {
                                             .foregroundColor(.red)
                                     }
                                     Spacer()
-                                    Image(systemName: "plus.circle.fill")
-                                        .foregroundColor(.hatchGreen)
+                                    NavigationLink(destination: ScannerIntroView().environmentObject(session)) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .foregroundColor(.hatchGreen)
+                                    }
                                 }
                                 .padding()
                                 .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color(hex: "#FAFAFA")))
@@ -148,10 +152,10 @@ struct SupervisorBatchesView: View {
 
             VStack(spacing: 10) {
                 ForEach(batches) { item in
-                    NavigationLink(destination: BatchDetailView(batchID: item.id, breed: item.breed, date: item.date, status: item.status, statusColor: item.statusColor).environmentObject(session)) {
+                    NavigationLink(destination: BatchDetailView(batchID: item.batchID, breed: item.breed, date: item.date, status: item.status, statusColor: item.statusColor, canExecute: item.statusCode == .approvedReady || item.statusCode == .synced).environmentObject(session)) {
                         HStack(alignment: .center, spacing: 12) {
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(item.id)
+                                Text(item.batchID)
                                     .font(.headline)
                                     .foregroundColor(.primary)
                                 Text(item.breed)

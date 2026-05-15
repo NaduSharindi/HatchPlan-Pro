@@ -25,10 +25,14 @@ final class AppSessionViewModel: ObservableObject {
     @Published var selectedTabIndex = 0
     @Published var supervisorNotifications: [HatcheryNotification] = []
     @Published var batchInsights: [BatchInsight] = []
+    @Published var hatchPlans: [HatchPlanRecord] = []
     @Published var scheduledBatches: [ScheduledBatch] = []
     @Published var efficiencyForecast = EfficiencyForecast(title: "Hatch window peaks in 4.5h", percentage: 0.75)
     @Published var hatchDetailSnapshots: [String: HatchDetailSnapshot] = [:]
     @Published var scannedBatches: [ScannedBatch] = []
+    @Published var accessibilityTextScale: Double = 1.0
+    @Published var accessibilityVoiceOverEnabled: Bool = false
+    @Published var biometricsEnabled: Bool = BiometricAuthService.shared.isEnabled
 
     // MARK: - Auth & Backend State
     @Published var isLoadingAuth: Bool = false
@@ -41,6 +45,25 @@ final class AppSessionViewModel: ObservableObject {
     private let authService = FirebaseAuthService.shared
     private let biometricService = BiometricAuthService.shared
     private var authStateHandle: AuthStateDidChangeListenerHandle?
+
+    var preferredDynamicTypeSize: DynamicTypeSize {
+        switch accessibilityTextScale {
+        case ..<0.9:
+            return .xSmall
+        case ..<1.0:
+            return .small
+        case ..<1.1:
+            return .medium
+        case ..<1.2:
+            return .large
+        case ..<1.3:
+            return .xLarge
+        case ..<1.4:
+            return .xxLarge
+        default:
+            return .xxxLarge
+        }
+    }
 
     let managerBatches: [HatcheryBatch] = [
         HatcheryBatch(name: "Batch A-24", stage: "Incubation Day 7", eggs: 1200, temperature: 37.8, humidity: 58, turnerStatus: "Auto-turning", completionProgress: 0.62, isCritical: false),
@@ -254,6 +277,26 @@ final class AppSessionViewModel: ObservableObject {
         }
     }
 
+    var pendingPlans: [HatchPlanRecord] {
+        hatchPlans.filter { $0.status == .pendingReview }
+    }
+
+    var approvedPlans: [HatchPlanRecord] {
+        hatchPlans.filter { $0.status == .approvedReady || $0.status == .synced }
+    }
+
+    var rejectedPlans: [HatchPlanRecord] {
+        hatchPlans.filter { $0.status == .rejected }
+    }
+
+    var todayScheduledBatches: [ScheduledBatch] {
+        scheduledBatches.filter { $0.dateLabel.uppercased().contains("TODAY") }
+    }
+
+    var hasTodaySchedule: Bool {
+        !todayScheduledBatches.isEmpty
+    }
+
     var todaySummary: String {
         switch currentRole {
         case .manager:
@@ -273,6 +316,19 @@ final class AppSessionViewModel: ObservableObject {
         )
     }
 
+    func setAccessibilityTextScale(_ scale: Double) {
+        accessibilityTextScale = min(max(scale, 0.85), 1.45)
+    }
+
+    func setBiometricEnabled(_ enabled: Bool) {
+        biometricsEnabled = enabled
+        if enabled {
+            biometricService.enableBiometric()
+        } else {
+            biometricService.disableBiometric()
+        }
+    }
+
     func recordCredentials(email: String, name: String? = nil) {
         currentUser = HatcheryUserProfile(
             fullName: name?.isEmpty == false ? name! : currentUser.fullName,
@@ -284,6 +340,99 @@ final class AppSessionViewModel: ObservableObject {
 
     func markPINVerified() {
         isPINVerified = true
+    }
+
+    func bootstrapPlanStateIfNeeded() {
+        guard hatchPlans.isEmpty else { return }
+
+        hatchPlans = [
+            HatchPlanRecord(batchID: "#B1024", breed: "Ross 308", targetChicks: 12500, eggSetDate: "Oct 20, 2023", hatchDate: "Nov 10, 2023", status: .pendingReview, createdBy: "Hatchery Supervisor", createdAt: Date().addingTimeInterval(-1800), reviewedBy: nil, rejectionReason: nil, location: "Meegoda"),
+            HatchPlanRecord(batchID: "#B1028", breed: "Cobb 500", targetChicks: 9800, eggSetDate: "Oct 22, 2023", hatchDate: "Nov 12, 2023", status: .approvedReady, createdBy: "Hatchery Supervisor", createdAt: Date().addingTimeInterval(-86000), reviewedBy: "Manager", rejectionReason: nil, location: "Kosgama"),
+            HatchPlanRecord(batchID: "#B1022", breed: "Lohmann Brown", targetChicks: 11200, eggSetDate: "Oct 19, 2023", hatchDate: "Nov 09, 2023", status: .rejected, createdBy: "Hatchery Supervisor", createdAt: Date().addingTimeInterval(-140000), reviewedBy: "Manager", rejectionReason: "Target temperature requires a tighter band.", location: "Halwatura")
+        ]
+    }
+
+    func submitPlan(batchID: String,
+                    breed: String,
+                    targetChicks: Int,
+                    eggSetDate: String,
+                    hatchDate: String,
+                    location: String = "Meegoda",
+                    createdBy: String? = nil) {
+        let plan = HatchPlanRecord(
+            batchID: batchID,
+            breed: breed,
+            targetChicks: targetChicks,
+            eggSetDate: eggSetDate,
+            hatchDate: hatchDate,
+            status: .pendingReview,
+            createdBy: createdBy ?? currentUser.fullName,
+            createdAt: Date(),
+            reviewedBy: nil,
+            rejectionReason: nil,
+            location: location
+        )
+
+        hatchPlans.insert(plan, at: 0)
+        appendSupervisorNotification(type: .approvalUpdate,
+                                     title: "Plan for Batch \(batchID) submitted for review.",
+                                     message: "Waiting for manager approval before execution.")
+        PushNotificationService.shared.scheduleApprovalNotification(batchID: batchID, supervisorName: currentUser.fullName)
+    }
+
+    func approvePlan(batchID: String, reviewedBy managerName: String = "Manager") {
+        guard let index = hatchPlans.firstIndex(where: { $0.batchID == batchID }) else { return }
+        hatchPlans[index].status = .approvedReady
+        hatchPlans[index].reviewedBy = managerName
+        hatchPlans[index].rejectionReason = nil
+
+        appendSupervisorNotification(type: .approvalUpdate,
+                                     title: "Batch \(batchID) approved and ready.",
+                                     message: "You can now execute the hatch plan.")
+        appendManagerNotification(type: .approvalUpdate,
+                                   title: "Batch \(batchID) approved.",
+                                   message: "Supervisor plan moved to approved list.")
+        PushNotificationService.shared.scheduleLocalNotification(title: "Batch Approved", body: "Batch \(batchID) is ready for execution.", identifier: "batch_approved_\(batchID)", timeInterval: 1)
+    }
+
+    func rejectPlan(batchID: String, reason: String = "The manager requested changes before execution.") {
+        guard let index = hatchPlans.firstIndex(where: { $0.batchID == batchID }) else { return }
+        hatchPlans[index].status = .rejected
+        hatchPlans[index].reviewedBy = "Manager"
+        hatchPlans[index].rejectionReason = reason
+
+        appendSupervisorNotification(type: .approvalUpdate,
+                                     title: "Batch \(batchID) was rejected.",
+                                     message: reason)
+        appendManagerNotification(type: .systemMessage,
+                                   title: "Batch \(batchID) rejected.",
+                                   message: reason)
+        PushNotificationService.shared.scheduleLocalNotification(title: "Batch Rejected", body: "Batch \(batchID) requires changes.", identifier: "batch_rejected_\(batchID)", timeInterval: 1)
+    }
+
+    func executeApprovedPlan(batchID: String) {
+        guard let index = hatchPlans.firstIndex(where: { $0.batchID == batchID }) else { return }
+        hatchPlans[index].status = .synced
+
+        appendManagerNotification(type: .approvalUpdate,
+                                   title: "Batch \(batchID) executed by supervisor.",
+                                   message: "The plan has been synchronised and moved into execution.")
+        PushNotificationService.shared.scheduleBatchAlert(batchID: batchID, message: "Batch \(batchID) has been executed and synchronised.")
+    }
+
+    func approveAllPendingPlans(reviewedBy managerName: String = "Manager") {
+        let pendingBatchIDs = pendingPlans.map { $0.batchID }
+        pendingBatchIDs.forEach { approvePlan(batchID: $0, reviewedBy: managerName) }
+    }
+
+    private func appendSupervisorNotification(type: NotificationType, title: String, message: String) {
+        let notification = HatcheryNotification(type: type, title: title, message: message, timestamp: Date(), timeLabel: "Just now")
+        supervisorNotifications.insert(notification, at: 0)
+    }
+
+    private func appendManagerNotification(type: NotificationType, title: String, message: String) {
+        let notification = HatcheryNotification(type: type, title: title, message: message, timestamp: Date(), timeLabel: "Just now")
+        managerNotifications.insert(notification, at: 0)
     }
 
     // MARK: - Firebase Sign In
@@ -673,6 +822,7 @@ final class AppSessionViewModel: ObservableObject {
     init() {
         initializeScheduledBatches()
         initializeHatchDetails()
+        bootstrapPlanStateIfNeeded()
 
         // Listen for Firebase Auth state changes
         authStateHandle = authService.addAuthStateListener { [weak self] user in

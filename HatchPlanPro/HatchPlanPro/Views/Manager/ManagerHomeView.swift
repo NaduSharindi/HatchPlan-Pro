@@ -39,15 +39,11 @@ struct ManagerHomeView: View {
     private var header: some View {
         HStack(alignment: .center) {
             HStack(spacing: 12) {
-                AvatarInitialsView(initials: "MN")
+                AppLogoView(size: 28)
                 VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "leaf.fill")
-                            .font(.caption.weight(.semibold))
-                        Text("HatchPlan Pro")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                    }
-                    .foregroundColor(.hatchGreen)
+                    Text("HatchPlan Pro")
+                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                        .foregroundColor(.hatchGreen)
 
                     Text("Meegoda Hatchery")
                         .font(.subheadline.weight(.medium))
