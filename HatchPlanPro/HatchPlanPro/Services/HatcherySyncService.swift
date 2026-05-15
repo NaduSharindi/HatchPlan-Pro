@@ -382,7 +382,7 @@ final class HatcherySyncService {
             "targetChicks": batch.targetChicks,
             "eggSetDate": batch.eggSetDate,
             "hatchDate": batch.hatchDate,
-            "status": batch.status,
+            "status": batch.status.rawValue,
             "createdAt": FieldValue.serverTimestamp(),
             "createdBy": batch.createdBy
         ]
