@@ -10,6 +10,7 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 
 /// Completion alias for auth results.
 typealias AuthResultCompletion = (Result<User, Error>) -> Void
@@ -231,4 +232,3 @@ final class FirebaseAuthService {
     }
 }
 
-import FirebaseFirestore

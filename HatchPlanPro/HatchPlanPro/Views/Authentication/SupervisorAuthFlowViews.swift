@@ -11,63 +11,62 @@ struct SupervisorSplashView: View {
     @EnvironmentObject private var session: AppSessionViewModel
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                LinearGradient(colors: [.white, .hatchGreenSoft, .white], startPoint: .top, endPoint: .bottom)
-                    .ignoresSafeArea()
+        ZStack {
+            LinearGradient(colors: [.white, .hatchGreenSoft, .white], startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
 
-                VStack(spacing: 28) {
-                    Spacer()
+            VStack(spacing: 28) {
+                Spacer()
 
-                    VStack(spacing: 14) {
-                        ZStack(alignment: .bottomTrailing) {
-                            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                                .fill(.white)
-                                .frame(width: 92, height: 92)
-                                .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
+                VStack(spacing: 14) {
+                    ZStack(alignment: .bottomTrailing) {
+                        RoundedRectangle(cornerRadius: 24, style: .continuous)
+                            .fill(.white)
+                            .frame(width: 92, height: 92)
+                            .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
 
-                            Image(systemName: "drop.fill")
-                                .font(.system(size: 40, weight: .semibold))
-                                .foregroundColor(.hatchGreen)
-                                .frame(width: 92, height: 92)
-
-                            Circle()
-                                .fill(Color.hatchOrange)
-                                .frame(width: 18, height: 18)
-                                .overlay(Image(systemName: "chart.line.uptrend.xyaxis").font(.caption2).foregroundColor(.white))
-                                .offset(x: 8, y: 8)
-                        }
-
-                        Text("HatchPlan Pro")
-                            .font(.system(size: 33, weight: .bold, design: .rounded))
+                        Image(systemName: "drop.fill")
+                            .font(.system(size: 40, weight: .semibold))
                             .foregroundColor(.hatchGreen)
-                        Text("Precision poultry management")
-                            .font(.caption.weight(.semibold))
-                            .kerning(2.4)
-                            .foregroundColor(.secondary)
+                            .frame(width: 92, height: 92)
+
+                        Circle()
+                            .fill(Color.hatchOrange)
+                            .frame(width: 18, height: 18)
+                            .overlay(Image(systemName: "chart.line.uptrend.xyaxis").font(.caption2).foregroundColor(.white))
+                            .offset(x: 8, y: 8)
                     }
 
-                    Spacer()
-
-                    VStack(spacing: 18) {
-                        NavigationLink(destination: SupervisorOnboardingView()) {
-                            Text("Enter supervisor flow")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .foregroundColor(.white)
-                                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
-                        }
-
-                        Text("Role-linked, secure, and audit-friendly")
-                            .font(.footnote.weight(.medium))
-                            .foregroundColor(.secondary)
-                    }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 24)
+                    Text("HatchPlan Pro")
+                        .font(.system(size: 33, weight: .bold, design: .rounded))
+                        .foregroundColor(.hatchGreen)
+                    Text("Precision poultry management")
+                        .font(.caption.weight(.semibold))
+                        .kerning(2.4)
+                        .foregroundColor(.secondary)
                 }
+
+                Spacer()
+
+                VStack(spacing: 18) {
+                    NavigationLink(destination: SupervisorOnboardingView()) {
+                        Text("Enter supervisor flow")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .foregroundColor(.white)
+                            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
+                    }
+
+                    Text("Role-linked, secure, and audit-friendly")
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.secondary)
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
         }
+        .navigationBarHidden(true)
     }
 }
 
@@ -234,14 +233,30 @@ struct SupervisorLoginView: View {
                 .accessibilityLabel("Sign in")
 
                 Button {
-                    // Biometric-only sign in (requires existing session)
-                    session.chooseRole(.supervisor)
-                    session.recordCredentials(email: email)
-                    goToBiometrics = true
+                    // Biometric-only sign in — only works for returning users with existing Firebase session
+                    if FirebaseAuthService.shared.isSignedIn {
+                        session.chooseRole(.supervisor)
+                        session.recordCredentials(email: email)
+                        BiometricAuthService.shared.authenticate(reason: "Sign in to HatchPlan Pro") { result in
+                            switch result {
+                            case .success:
+                                session.completeAuthentication(usingFaceID: true)
+                            case .failure:
+                                session.authErrorMessage = "Biometric authentication failed. Please use email and password."
+                                session.showAuthError = true
+                            }
+                        }
+                    } else {
+                        session.authErrorMessage = "Please sign in with email and password first."
+                        session.showAuthError = true
+                    }
                 } label: {
-                    Text("Sign In with Biometrics")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundColor(.hatchGreen)
+                    HStack(spacing: 8) {
+                        Image(systemName: BiometricAuthService.shared.biometricIconName)
+                        Text("Sign In with \(BiometricAuthService.shared.biometricName)")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(.hatchGreen)
                 }
                 .accessibilityLabel("Sign in with biometrics")
 
@@ -250,9 +265,11 @@ struct SupervisorLoginView: View {
                 }
 
                 VStack(spacing: 10) {
-                    Text("Forgot Password?")
-                        .foregroundColor(.secondary)
                     NavigationLink(destination: SupervisorForgotPasswordView()) {
+                        Text("Forgot Password?")
+                            .foregroundColor(.secondary)
+                    }
+                    NavigationLink(destination: SupervisorSignUpView()) {
                         Text("Don't have an account? Sign Up")
                             .fontWeight(.semibold)
                             .foregroundColor(.hatchGreen)
@@ -272,25 +289,165 @@ struct SupervisorLoginView: View {
 }
 
 
+// MARK: - Supervisor Sign Up
+struct SupervisorSignUpView: View {
+    @EnvironmentObject private var session: AppSessionViewModel
+    @State private var fullName = ""
+    @State private var email = ""
+    @State private var password = ""
+    @State private var confirmPassword = ""
+    @State private var goToBiometrics = false
+    @State private var localError: String?
+    @Environment(\.dismiss) var dismiss
+
+    private var isFormValid: Bool {
+        !fullName.isEmpty && !email.isEmpty &&
+        password.count >= 6 && password == confirmPassword
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 22) {
+                VStack(spacing: 10) {
+                    Image(systemName: "drop.fill")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(.hatchGreen)
+                        .padding(18)
+                        .background(Circle().fill(Color.hatchGreenSoft))
+                        .accessibilityHidden(true)
+
+                    Text("Create Account")
+                        .font(.system(size: 26, weight: .bold, design: .rounded))
+                        .foregroundColor(.hatchGreen)
+                        .accessibilityAddTraits(.isHeader)
+                    Text("Supervisor registration")
+                        .font(.caption.weight(.semibold))
+                        .kerning(2.2)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 18)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("FULL NAME").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
+                    TextField("Nadunika Sharindi", text: $fullName)
+                        .textContentType(.name)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Full name")
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("EMAIL ADDRESS").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
+                    TextField("nadunika@primahatchery.com", text: $email)
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Email address")
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("PASSWORD").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
+                    SecureField("Min. 6 characters", text: $password)
+                        .textContentType(.newPassword)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Password")
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("CONFIRM PASSWORD").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
+                    SecureField("Re-enter password", text: $confirmPassword)
+                        .textContentType(.newPassword)
+                        .padding()
+                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                        .accessibilityLabel("Confirm password")
+                }
+
+                // Error display
+                if let errorMsg = localError ?? (session.showAuthError ? session.authErrorMessage : nil) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
+                        Text(errorMsg).font(.caption).foregroundColor(.red).lineLimit(3)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+
+                Button {
+                    localError = nil
+                    guard !fullName.isEmpty else { localError = "Please enter your full name."; return }
+                    guard !email.isEmpty else { localError = "Please enter your email."; return }
+                    guard password.count >= 6 else { localError = "Password must be at least 6 characters."; return }
+                    guard password == confirmPassword else { localError = "Passwords do not match."; return }
+
+                    session.chooseRole(.supervisor)
+                    session.firebaseSignUp(email: email, password: password, fullName: fullName) { success in
+                        if success {
+                            goToBiometrics = true
+                        }
+                    }
+                } label: {
+                    HStack {
+                        if session.isLoadingAuth {
+                            ProgressView().tint(.white)
+                        }
+                        Text("Create Account")
+                            .font(.headline.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
+                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
+                }
+                .disabled(!isFormValid || session.isLoadingAuth)
+                .opacity(isFormValid ? 1.0 : 0.6)
+                .accessibilityLabel("Create account")
+
+                NavigationLink(destination: SupervisorBiometricIntroView(), isActive: $goToBiometrics) {
+                    EmptyView()
+                }
+
+                NavigationLink(destination: SupervisorLoginView()) {
+                    HStack(spacing: 4) {
+                        Text("Already have an account?").foregroundColor(.secondary)
+                        Text("Sign In").fontWeight(.semibold).foregroundColor(.hatchGreen)
+                    }
+                    .font(.subheadline)
+                }
+                .padding(.top, 8)
+            }
+            .padding(24)
+        }
+        .background(Color.hatchSurface.ignoresSafeArea())
+        .navigationBarHidden(true)
+        .onDisappear {
+            session.showAuthError = false
+            session.authErrorMessage = nil
+        }
+    }
+}
+
 struct SupervisorBiometricIntroView: View {
     @EnvironmentObject private var session: AppSessionViewModel
+    private let biometric = BiometricAuthService.shared
 
     var body: some View {
         VStack(spacing: 22) {
             Spacer()
 
             VStack(spacing: 14) {
-                Image(systemName: "faceid")
+                Image(systemName: biometric.biometricIconName)
                     .font(.system(size: 40, weight: .semibold))
                     .foregroundColor(.hatchGreen)
                     .padding(28)
                     .background(Circle().fill(Color.white))
                     .shadow(color: .black.opacity(0.06), radius: 16, x: 0, y: 8)
 
-                Text("Sign In with Biometrics")
+                Text("Enable \(biometric.biometricName)")
                     .font(.title2.bold())
                     .foregroundColor(.black)
-                Text("Secure access via Face ID or Touch ID to your hatchery analytics and biological windows.")
+                Text("Secure access via \(biometric.biometricName) to your hatchery analytics and biological windows.")
                     .multilineTextAlignment(.center)
                     .foregroundColor(.secondary)
                     .padding(.horizontal, 28)
@@ -301,7 +458,7 @@ struct SupervisorBiometricIntroView: View {
             Button {
                 session.completeAuthentication(usingFaceID: true)
             } label: {
-                Label("Verify Identity", systemImage: "touchid")
+                Label("Enable \(biometric.biometricName)", systemImage: biometric.biometricIconName)
                     .font(.headline.weight(.semibold))
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -310,8 +467,10 @@ struct SupervisorBiometricIntroView: View {
             }
             .padding(.horizontal, 24)
 
-            NavigationLink(destination: SupervisorFaceIDSetupView()) {
-                Text("Use Passcode Fallback")
+            Button {
+                session.completeAuthentication(usingFaceID: false)
+            } label: {
+                Text("Skip for now")
                     .fontWeight(.semibold)
                     .foregroundColor(.hatchGreen)
             }
@@ -324,7 +483,10 @@ struct SupervisorBiometricIntroView: View {
 }
 
 struct SupervisorForgotPasswordView: View {
-    @State private var email = "agronomist@hatchpro.com"
+    @State private var email = ""
+    @State private var isSending = false
+    @State private var showSuccess = false
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -342,36 +504,77 @@ struct SupervisorForgotPasswordView: View {
                 .foregroundColor(.hatchGreen)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text("Enter your registered email address to receive an industrial-grade verification code for your HatchPlan account.")
+            Text("Enter your registered email address to receive a password reset link for your HatchPlan account.")
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("EMAIL ADDRESS").font(.caption.weight(.bold)).kerning(1.2)
-                TextField("agronomist@hatchpro.com", text: $email)
+                TextField("nadunika@primahatchery.com", text: $email)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.emailAddress)
+                    .textContentType(.emailAddress)
                     .padding()
                     .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
+                    .accessibilityLabel("Email address")
             }
             .supervisorCard()
 
-            NavigationLink(destination: SupervisorVerificationCodeView()) {
-                Text("Send Verification Code")
-                    .font(.headline.weight(.semibold))
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
+            if showSuccess {
+                HStack(spacing: 8) {
+                    Image(systemName: "checkmark.circle.fill").foregroundColor(.hatchGreen)
+                    Text("Password reset email sent! Check your inbox.")
+                        .font(.caption).foregroundColor(.hatchGreen)
+                }
             }
 
+            if let errorMsg = errorMessage {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
+                    Text(errorMsg).font(.caption).foregroundColor(.red).lineLimit(3)
+                }
+            }
+
+            Button {
+                guard !email.isEmpty else {
+                    errorMessage = "Please enter your email address."
+                    return
+                }
+                isSending = true
+                errorMessage = nil
+                showSuccess = false
+                FirebaseAuthService.shared.resetPassword(email: email) { result in
+                    isSending = false
+                    switch result {
+                    case .success:
+                        showSuccess = true
+                    case .failure(let error):
+                        errorMessage = error.localizedDescription
+                    }
+                }
+            } label: {
+                HStack {
+                    if isSending { ProgressView().tint(.white) }
+                    Text("Send Reset Link")
+                        .font(.headline.weight(.semibold))
+                }
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundColor(.white)
+                .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
+            }
+            .disabled(email.isEmpty || isSending)
+            .opacity(email.isEmpty ? 0.6 : 1.0)
+
             NavigationLink(destination: SupervisorLoginView()) {
-                Text("Wait, I remember it! Log in")
+                Text("Back to Sign In")
                     .fontWeight(.semibold)
                     .foregroundColor(.hatchGreen)
             }
 
             HStack {
                 infoMiniCard(title: "ENCRYPTED", body: "Bank-grade security protocols for all reset requests.", icon: "shield.fill")
-                infoMiniCard(title: "INSTANT", body: "OTP delivery via our priority agricultural relay servers.", icon: "bolt.fill")
+                infoMiniCard(title: "INSTANT", body: "Password reset link delivered via Firebase Auth.", icon: "bolt.fill")
             }
 
             Spacer()
@@ -560,20 +763,21 @@ struct SupervisorPasswordSuccessView: View {
 
 struct SupervisorFaceIDSetupView: View {
     @EnvironmentObject private var session: AppSessionViewModel
+    private let biometric = BiometricAuthService.shared
 
     var body: some View {
         ScrollView {
             VStack(spacing: 22) {
-                Image(systemName: "faceid")
+                Image(systemName: biometric.biometricIconName)
                     .font(.system(size: 44, weight: .bold))
                     .foregroundColor(.hatchGreen)
                     .padding(24)
                     .background(Circle().fill(Color.white))
                     .shadow(color: .black.opacity(0.07), radius: 16, x: 0, y: 8)
 
-                Text("FaceID Ready")
+                Text("\(biometric.biometricName) Ready")
                     .font(.largeTitle.bold())
-                Text("You can now use facial recognition to securely sign in and approve plans in HatchPlan Pro.")
+                Text("You can now use \(biometric.biometricName) to securely sign in and approve plans in HatchPlan Pro.")
                     .multilineTextAlignment(.center)
                     .foregroundColor(.secondary)
 
@@ -588,7 +792,7 @@ struct SupervisorFaceIDSetupView: View {
                 Button {
                     session.completeAuthentication(usingFaceID: true)
                 } label: {
-                    Text("Done")
+                    Text("Enable \(biometric.biometricName)")
                         .font(.headline.weight(.semibold))
                         .frame(maxWidth: .infinity)
                         .padding()
@@ -596,8 +800,10 @@ struct SupervisorFaceIDSetupView: View {
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
 
-                NavigationLink(destination: SupervisorTouchIDScanView()) {
-                    Text("Set Up Later")
+                Button {
+                    session.completeAuthentication(usingFaceID: false)
+                } label: {
+                    Text("Skip for now")
                         .fontWeight(.semibold)
                         .foregroundColor(.hatchGreen)
                 }
@@ -605,7 +811,7 @@ struct SupervisorFaceIDSetupView: View {
             .padding(24)
         }
         .background(Color.hatchSurface.ignoresSafeArea())
-        .navigationTitle("FaceID Setup")
+        .navigationTitle("\(biometric.biometricName) Setup")
         .navigationBarTitleDisplayMode(.inline)
     }
 }
@@ -658,6 +864,8 @@ struct SupervisorTouchIDScanView: View {
 }
 
 struct SupervisorTouchIDReadyView: View {
+    @EnvironmentObject private var session: AppSessionViewModel
+
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
@@ -670,13 +878,17 @@ struct SupervisorTouchIDReadyView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 26)
-            Button("Done") { }
-                .font(.headline.weight(.semibold))
-                .frame(maxWidth: .infinity)
-                .padding()
-                .foregroundColor(.white)
+            Button {
+                session.completeAuthentication(usingFaceID: true)
+            } label: {
+                Text("Done")
+                    .font(.headline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .foregroundColor(.white)
                     .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
-                .padding(.horizontal, 24)
+                    .padding(.horizontal, 24)
+            }
             Spacer()
         }
         .background(Color.hatchSurface.ignoresSafeArea())
