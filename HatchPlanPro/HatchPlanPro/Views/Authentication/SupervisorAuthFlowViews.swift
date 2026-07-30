@@ -49,7 +49,7 @@ struct SupervisorSplashView: View {
                 Spacer()
 
                 VStack(spacing: 18) {
-                    NavigationLink(destination: SupervisorOnboardingView()) {
+                    NavigationLink(destination: SupervisorLoginView()) {
                         Text("Enter supervisor flow")
                             .fontWeight(.semibold)
                             .frame(maxWidth: .infinity)
@@ -154,7 +154,6 @@ struct SupervisorLoginView: View {
     @EnvironmentObject private var session: AppSessionViewModel
     @State private var email = "nadunika@primahatchery.com"
     @State private var password = ""
-    @State private var goToBiometrics = false
 
     var body: some View {
         ScrollView {
@@ -212,7 +211,7 @@ struct SupervisorLoginView: View {
                     // Use Firebase Auth for real sign-in
                     session.firebaseSignIn(email: email, password: password) { success in
                         if success {
-                            goToBiometrics = true
+                            session.completeAuthentication(usingFaceID: false)
                         }
                     }
                 } label: {
@@ -259,10 +258,6 @@ struct SupervisorLoginView: View {
                 }
                 .accessibilityLabel("Sign in with biometrics")
 
-                NavigationLink(destination: SupervisorBiometricIntroView(), isActive: $goToBiometrics) {
-                    EmptyView()
-                }
-
                 VStack(spacing: 10) {
                     NavigationLink(destination: SupervisorForgotPasswordView()) {
                         Text("Forgot Password?")
@@ -295,7 +290,6 @@ struct SupervisorSignUpView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var confirmPassword = ""
-    @State private var goToBiometrics = false
     @State private var localError: String?
     @Environment(\.dismiss) var dismiss
 
@@ -383,7 +377,7 @@ struct SupervisorSignUpView: View {
                     session.chooseRole(.supervisor)
                     session.firebaseSignUp(email: email, password: password, fullName: fullName) { success in
                         if success {
-                            goToBiometrics = true
+                            session.completeAuthentication(usingFaceID: false)
                         }
                     }
                 } label: {
@@ -402,10 +396,6 @@ struct SupervisorSignUpView: View {
                 .disabled(!isFormValid || session.isLoadingAuth)
                 .opacity(isFormValid ? 1.0 : 0.6)
                 .accessibilityLabel("Create account")
-
-                NavigationLink(destination: SupervisorBiometricIntroView(), isActive: $goToBiometrics) {
-                    EmptyView()
-                }
 
                 NavigationLink(destination: SupervisorLoginView()) {
                     HStack(spacing: 4) {
