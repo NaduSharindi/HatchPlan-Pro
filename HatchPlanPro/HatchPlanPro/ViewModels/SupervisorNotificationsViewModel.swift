@@ -19,12 +19,27 @@ struct NotificationSection: Identifiable {
 
 class SupervisorNotificationsViewModel: ObservableObject {
     @Published var sections: [NotificationSection] = []
-    
-    func loadData(from session: AppSessionViewModel) {
-        let notifications = session.supervisorNotifications
+    @Published var isLoading = false
+    @Published var unreadCount = 0
 
+    func loadData(from session: AppSessionViewModel) {
+        isLoading = true
+        session.loadSupervisorNotifications { [weak self] in
+            guard let self else { return }
+            self.buildSections(from: session.supervisorNotifications)
+            self.unreadCount = session.unreadSupervisorNotifCount
+            self.isLoading = false
+        }
+    }
+
+    func refresh(from session: AppSessionViewModel) {
+        loadData(from: session)
+    }
+
+    func buildSections(from notifications: [HatcheryNotification]) {
         guard !notifications.isEmpty else {
             sections = []
+            unreadCount = 0
             return
         }
 
@@ -51,5 +66,7 @@ class SupervisorNotificationsViewModel: ObservableObject {
                 )
             })
         }
+
+        unreadCount = notifications.count
     }
 }

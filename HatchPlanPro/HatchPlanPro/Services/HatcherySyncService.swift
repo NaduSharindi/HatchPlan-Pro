@@ -71,7 +71,7 @@ final class HatcherySyncService {
                 "type": notification.type.rawValue,
                 "title": notification.title,
                 "message": notification.message,
-                "timestamp": notification.timestamp,
+                "timestamp": Timestamp(date: notification.timestamp),
                 "timeLabel": notification.timeLabel
             ] as [String: Any]
         }
@@ -470,7 +470,7 @@ final class HatcherySyncService {
                     "type": notification.type.rawValue,
                     "title": notification.title,
                     "message": notification.message,
-                    "timestamp": notification.timestamp,
+                    "timestamp": Timestamp(date: notification.timestamp),
                     "timeLabel": notification.timeLabel
                 ] as [String: Any]
             },
@@ -510,12 +510,25 @@ final class HatcherySyncService {
               let type = NotificationType(rawValue: typeString),
               let title = dict["title"] as? String,
               let message = dict["message"] as? String,
-              let timestamp = dict["timestamp"] as? Timestamp,
-              let timeLabel = dict["timeLabel"] as? String else {
+              let timeLabel = dict["timeLabel"] as? String,
+              let timestamp = decodeTimestamp(from: dict) else {
             return nil
         }
 
-        return HatcheryNotification(type: type, title: title, message: message, timestamp: timestamp.dateValue(), timeLabel: timeLabel)
+        return HatcheryNotification(type: type, title: title, message: message, timestamp: timestamp, timeLabel: timeLabel)
+    }
+
+    private static func decodeTimestamp(from dict: [String: Any]) -> Date? {
+        if let timestamp = dict["timestamp"] as? Timestamp {
+            return timestamp.dateValue()
+        }
+        if let date = dict["timestamp"] as? Date {
+            return date
+        }
+        if let interval = dict["timestamp"] as? TimeInterval {
+            return Date(timeIntervalSince1970: interval)
+        }
+        return nil
     }
 
     private static func decodeBatchInsight(_ dict: [String: Any]) -> BatchInsight? {

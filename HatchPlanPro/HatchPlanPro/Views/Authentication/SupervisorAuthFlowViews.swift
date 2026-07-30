@@ -8,257 +8,106 @@
 import SwiftUI
 
 struct SupervisorSplashView: View {
-    @EnvironmentObject private var session: AppSessionViewModel
-
     var body: some View {
-        ZStack {
-            LinearGradient(colors: [.white, .hatchGreenSoft, .white], startPoint: .top, endPoint: .bottom)
-                .ignoresSafeArea()
-
-            VStack(spacing: 28) {
-                Spacer()
-
-                VStack(spacing: 14) {
-                    ZStack(alignment: .bottomTrailing) {
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .fill(.white)
-                            .frame(width: 92, height: 92)
-                            .shadow(color: .black.opacity(0.08), radius: 16, x: 0, y: 8)
-
-                        Image(systemName: "drop.fill")
-                            .font(.system(size: 40, weight: .semibold))
-                            .foregroundColor(.hatchGreen)
-                            .frame(width: 92, height: 92)
-
-                        Circle()
-                            .fill(Color.hatchOrange)
-                            .frame(width: 18, height: 18)
-                            .overlay(Image(systemName: "chart.line.uptrend.xyaxis").font(.caption2).foregroundColor(.white))
-                            .offset(x: 8, y: 8)
-                    }
-
-                    Text("HatchPlan Pro")
-                        .font(.system(size: 33, weight: .bold, design: .rounded))
-                        .foregroundColor(.hatchGreen)
-                    Text("Precision poultry management")
-                        .font(.caption.weight(.semibold))
-                        .kerning(2.4)
-                        .foregroundColor(.secondary)
-                }
-
-                Spacer()
-
-                VStack(spacing: 18) {
-                    NavigationLink(destination: SupervisorLoginView()) {
-                        Text("Enter supervisor flow")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .foregroundColor(.white)
-                            .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
-                    }
-
-                    Text("Role-linked, secure, and audit-friendly")
-                        .font(.footnote.weight(.medium))
-                        .foregroundColor(.secondary)
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 24)
-            }
-        }
-        .navigationBarHidden(true)
+        SupervisorOnboardingView()
     }
 }
 
 struct SupervisorOnboardingView: View {
-    @State private var pageIndex = 0
     @State private var goToLogin = false
-    @EnvironmentObject private var session: AppSessionViewModel
-
-    private let pages: [(title: String, body: String, image: String)] = [
-        ("AI-Driven Decisions", "Optimize hatchery performance with predictive analytics and automated risk assessment tools.", "brain.head.profile"),
-        ("Precision Incubation", "Monitor temperature, humidity, and batch health across every room in real time.", "oval.portrait.fill"),
-        ("Instant Security", "Approve access quickly with Face ID, Touch ID, and a supervisor PIN fallback.", "lock.shield.fill")
-    ]
 
     var body: some View {
-        VStack(spacing: 20) {
-            TabView(selection: $pageIndex) {
-                ForEach(pages.indices, id: \.self) { index in
-                    VStack(spacing: 18) {
-                        Spacer()
+        ZStack {
+            AuthScreenBackground()
 
-                        ZStack {
-                            Circle().fill(index == 1 ? Color.hatchOrangeSoft : Color.hatchGreenSoft).frame(width: 228, height: 228)
-                            Image(systemName: pages[index].image)
-                                .font(.system(size: 66, weight: .semibold))
-                                .foregroundColor(index == 1 ? .hatchOrange : .hatchGreen)
-                        }
-
-                        Text(pages[index].title)
-                            .font(.system(size: 31, weight: .bold, design: .rounded))
-                            .foregroundColor(.hatchGreen)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal)
-
-                        Text(pages[index].body)
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 28)
-
-                        Spacer()
-                    }
-                    .tag(index)
-                }
-            }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-
-            HStack(spacing: 8) {
-                ForEach(pages.indices, id: \.self) { index in
-                    Capsule()
-                        .fill(pageIndex == index ? Color.hatchGreen : Color.gray.opacity(0.2))
-                        .frame(width: pageIndex == index ? 24 : 8, height: 8)
-                }
-            }
-
-            Button {
-                if pageIndex < pages.count - 1 {
-                    withAnimation {
-                        pageIndex += 1
-                    }
-                } else {
-                    goToLogin = true
-                }
-            } label: {
-                Text(pageIndex == pages.count - 1 ? "Continue" : "Next")
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
-            }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 16)
-
-            NavigationLink(destination: SupervisorLoginView(), isActive: $goToLogin) {
-                EmptyView()
-            }
+            OnboardingFlowView(
+                pages: AppOnboardingContent.supervisorPages,
+                accentColor: .hatchGreen,
+                finishButtonTitle: "Continue to Sign In",
+                onSkip: { goToLogin = true },
+                onFinish: { goToLogin = true }
+            )
         }
-        .background(Color.hatchSurface.ignoresSafeArea())
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $goToLogin) {
+            SupervisorLoginView()
+        }
     }
 }
 
 struct SupervisorLoginView: View {
     @EnvironmentObject private var session: AppSessionViewModel
-    @State private var email = "nadunika@primahatchery.com"
+    @State private var email = ""
     @State private var password = ""
+    @State private var showBiometricSetup = false
+
+    private var canSignIn: Bool {
+        !email.trimmingCharacters(in: .whitespaces).isEmpty && !password.isEmpty
+    }
+
+    private let biometric = BiometricAuthService.shared
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 22) {
-                VStack(spacing: 10) {
-                    Image(systemName: "drop.fill")
-                        .font(.system(size: 34, weight: .bold))
-                        .foregroundColor(.hatchGreen)
-                        .padding(18)
-                        .background(Circle().fill(Color.hatchGreenSoft))
-                        .accessibilityHidden(true)
+            VStack(spacing: 24) {
+                AuthBackButton()
 
-                    Text("HatchPlan Pro")
-                        .font(.system(size: 26, weight: .bold, design: .rounded))
-                        .foregroundColor(.hatchGreen)
-                        .accessibilityAddTraits(.isHeader)
-                    Text("Precision poultry management")
-                        .font(.caption.weight(.semibold))
-                        .kerning(2.2)
-                        .foregroundColor(.secondary)
+                AuthHeader(
+                    title: "Supervisor Sign In",
+                    subtitle: "Access your hatchery dashboard, batches, and alerts.",
+                    accentColor: .hatchGreen,
+                    systemImage: "person.crop.circle.badge.checkmark"
+                )
+                .padding(.top, 8)
+
+                VStack(spacing: 16) {
+                    AuthTextField(
+                        label: "Email address",
+                        placeholder: "you@hatchery.com",
+                        text: $email,
+                        icon: "envelope.fill",
+                        keyboardType: .emailAddress,
+                        textContentType: .emailAddress
+                    )
+
+                    AuthTextField(
+                        label: "Password",
+                        placeholder: "Enter your password",
+                        text: $password,
+                        icon: "lock.fill",
+                        isSecure: true,
+                        textContentType: .password
+                    )
                 }
-                .padding(.top, 18)
+                .padding(.horizontal, 24)
 
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("EMAIL ADDRESS").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
-                    TextField("nadunika@primahatchery.com", text: $email)
-                        .textInputAutocapitalization(.never)
-                        .keyboardType(.emailAddress)
-                        .textContentType(.emailAddress)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
-                        .accessibilityLabel("Email address")
-                }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("PASSWORD").font(.caption.weight(.bold)).kerning(1.2).foregroundColor(.primary)
-                    SecureField("••••••••", text: $password)
-                        .textContentType(.password)
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color(hex: "#E9E9EE")))
-                        .accessibilityLabel("Password")
-                }
-
-                // Error display
                 if session.showAuthError, let errorMsg = session.authErrorMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill").foregroundColor(.red)
-                        Text(errorMsg).font(.caption).foregroundColor(.red).lineLimit(3)
-                    }
-                    .accessibilityElement(children: .combine)
+                    AuthErrorBanner(message: errorMsg)
+                        .padding(.horizontal, 24)
                 }
 
-                Button {
-                    session.chooseRole(.supervisor)
-                    // Use Firebase Auth for real sign-in
-                    session.firebaseSignIn(email: email, password: password) { success in
-                        if success {
-                            session.completeAuthentication(usingFaceID: false)
-                        }
-                    }
-                } label: {
-                    HStack {
-                        if session.isLoadingAuth {
-                            ProgressView().tint(.white)
-                        }
-                        Text("Sign In")
-                            .font(.headline.weight(.semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .foregroundColor(.white)
-                    .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
-                }
-                .disabled(email.isEmpty || password.isEmpty || session.isLoadingAuth)
-                .opacity(email.isEmpty || password.isEmpty ? 0.6 : 1.0)
-                .accessibilityLabel("Sign in")
+                AuthPrimaryButton(
+                    title: "Sign In",
+                    isLoading: session.isLoadingAuth,
+                    isEnabled: canSignIn,
+                    accentColor: .hatchGreen,
+                    action: signInWithEmail
+                )
+                .padding(.horizontal, 24)
 
-                Button {
-                    if BiometricAuthService.shared.isEnabled {
-                        session.chooseRole(.supervisor)
-                        session.recordCredentials(email: email)
-                        BiometricAuthService.shared.authenticate(reason: "Sign in to HatchPlan Pro") { result in
-                            switch result {
-                            case .success:
-                                session.completeAuthentication(usingFaceID: true)
-                            case .failure:
-                                session.authErrorMessage = "Biometric authentication failed. Please use email and password."
-                                session.showAuthError = true
-                            }
+                if BiometricAuthService.shared.isBiometricAvailable {
+                    Button(action: signInWithBiometrics) {
+                        HStack(spacing: 8) {
+                            Image(systemName: biometric.biometricIconName)
+                            Text(biometricSignInTitle)
                         }
-                    } else {
-                        session.authErrorMessage = "Enable biometrics in Settings first, then use this button to sign in."
-                        session.showAuthError = true
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundColor(.hatchGreen)
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: BiometricAuthService.shared.biometricIconName)
-                        Text("Sign In with \(BiometricAuthService.shared.biometricName)")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.hatchGreen)
+                    .accessibilityLabel("Sign in with biometrics")
                 }
-                .accessibilityLabel("Sign in with biometrics")
 
-                VStack(spacing: 10) {
+                VStack(spacing: 12) {
                     NavigationLink(destination: SupervisorForgotPasswordView()) {
                         Text("Forgot Password?")
                             .foregroundColor(.secondary)
@@ -269,16 +118,67 @@ struct SupervisorLoginView: View {
                             .foregroundColor(.hatchGreen)
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 4)
             }
-            .padding(24)
+            .padding(.bottom, 32)
         }
-        .background(Color.hatchSurface.ignoresSafeArea())
+        .background(AuthScreenBackground())
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $showBiometricSetup) {
+            BiometricSetupView(role: .supervisor)
+        }
+        .onAppear {
+            if session.canUseBiometricSignIn {
+                session.restoreStoredSession()
+            }
+        }
         .onDisappear {
             session.showAuthError = false
             session.authErrorMessage = nil
         }
+    }
+
+    private var biometricSignInTitle: String {
+        if session.canUseBiometricSignIn {
+            return "Unlock with \(biometric.biometricName)"
+        }
+        return "Sign In with \(biometric.biometricName)"
+    }
+
+    private func signInWithEmail() {
+        session.chooseRole(.supervisor)
+        session.firebaseSignIn(email: email.trimmingCharacters(in: .whitespaces), password: password) { success in
+            if success {
+                if session.shouldOfferBiometricEnrollment {
+                    showBiometricSetup = true
+                } else {
+                    session.completeAuthentication(usingFaceID: false)
+                }
+            }
+        }
+    }
+
+    private func signInWithBiometrics() {
+        session.chooseRole(.supervisor)
+
+        if session.canUseBiometricSignIn {
+            session.attemptBiometricUnlock { success, error in
+                if !success, let error {
+                    session.authErrorMessage = biometric.localizedErrorMessage(from: error)
+                    session.showAuthError = true
+                }
+            }
+            return
+        }
+
+        guard biometric.isEnabled else {
+            session.authErrorMessage = "Sign in with email and password once, then enable \(biometric.biometricName)."
+            session.showAuthError = true
+            return
+        }
+
+        session.authErrorMessage = "Sign in with your email and password to restore your session first."
+        session.showAuthError = true
     }
 }
 
@@ -291,7 +191,10 @@ struct SupervisorSignUpView: View {
     @State private var password = ""
     @State private var confirmPassword = ""
     @State private var localError: String?
+    @State private var showBiometricSetup = false
     @Environment(\.dismiss) var dismiss
+
+    private let biometric = BiometricAuthService.shared
 
     private var isFormValid: Bool {
         !fullName.isEmpty && !email.isEmpty &&
@@ -377,7 +280,11 @@ struct SupervisorSignUpView: View {
                     session.chooseRole(.supervisor)
                     session.firebaseSignUp(email: email, password: password, fullName: fullName) { success in
                         if success {
-                            session.completeAuthentication(usingFaceID: false)
+                            if session.canEnableBiometrics && !session.biometricsEnabled {
+                                showBiometricSetup = true
+                            } else {
+                                session.completeAuthentication(usingFaceID: false)
+                            }
                         }
                     }
                 } label: {
@@ -410,6 +317,9 @@ struct SupervisorSignUpView: View {
         }
         .background(Color.hatchSurface.ignoresSafeArea())
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $showBiometricSetup) {
+            BiometricSetupView(role: .supervisor)
+        }
         .onDisappear {
             session.showAuthError = false
             session.authErrorMessage = nil
@@ -445,7 +355,7 @@ struct SupervisorBiometricIntroView: View {
             .padding(.horizontal, 18)
 
             Button {
-                session.completeAuthentication(usingFaceID: true)
+                enableBiometrics()
             } label: {
                 Label("Enable \(biometric.biometricName)", systemImage: biometric.biometricIconName)
                     .font(.headline.weight(.semibold))
@@ -455,8 +365,11 @@ struct SupervisorBiometricIntroView: View {
                     .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
             }
             .padding(.horizontal, 24)
+            .disabled(!session.canEnableBiometrics || session.isUpdatingBiometrics)
+            .opacity(session.canEnableBiometrics ? 1 : 0.5)
 
             Button {
+                session.setBiometricEnabled(false)
                 session.completeAuthentication(usingFaceID: false)
             } label: {
                 Text("Skip for now")
@@ -464,10 +377,26 @@ struct SupervisorBiometricIntroView: View {
                     .foregroundColor(.hatchGreen)
             }
 
+            if let message = session.biometricErrorMessage {
+                BiometricNoticeBanner(message: message,
+                                      showsSettingsAction: biometric.shouldOfferSystemSettings) {
+                    session.openSystemSettings()
+                }
+                .padding(.horizontal, 24)
+            }
+
             Spacer()
         }
         .background(Color.hatchSurface.ignoresSafeArea())
         .navigationBarHidden(true)
+    }
+
+    private func enableBiometrics() {
+        session.setBiometricEnabled(true) { success in
+            if success {
+                session.completeAuthentication(usingFaceID: true, biometricAlreadyVerified: true)
+            }
+        }
     }
 }
 
@@ -778,8 +707,19 @@ struct SupervisorFaceIDSetupView: View {
                 }
                 .supervisorCard()
 
+                if let message = session.biometricErrorMessage {
+                    BiometricNoticeBanner(message: message,
+                                          showsSettingsAction: biometric.shouldOfferSystemSettings) {
+                        session.openSystemSettings()
+                    }
+                }
+
                 Button {
-                    session.completeAuthentication(usingFaceID: true)
+                    session.setBiometricEnabled(true) { success in
+                        if success {
+                            session.completeAuthentication(usingFaceID: true, biometricAlreadyVerified: true)
+                        }
+                    }
                 } label: {
                     Text("Enable \(biometric.biometricName)")
                         .font(.headline.weight(.semibold))
@@ -788,8 +728,11 @@ struct SupervisorFaceIDSetupView: View {
                         .foregroundColor(.white)
                         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Color.hatchGreen))
                 }
+                .disabled(!session.canEnableBiometrics || session.isUpdatingBiometrics)
+                .opacity(session.canEnableBiometrics ? 1 : 0.5)
 
                 Button {
+                    session.setBiometricEnabled(false)
                     session.completeAuthentication(usingFaceID: false)
                 } label: {
                     Text("Skip for now")
@@ -868,7 +811,10 @@ struct SupervisorTouchIDReadyView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 26)
             Button {
-                session.completeAuthentication(usingFaceID: true)
+                session.setBiometricEnabled(true) { _ in
+                    session.completeAuthentication(usingFaceID: session.biometricsEnabled,
+                                                   biometricAlreadyVerified: true)
+                }
             } label: {
                 Text("Done")
                     .font(.headline.weight(.semibold))

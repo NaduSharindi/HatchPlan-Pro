@@ -37,6 +37,7 @@ struct ContentView: View {
                         Label("ALERTS", systemImage: "bell.fill")
                     }
                     .tag(3)
+                    .badge(session.unreadSupervisorNotifCount)
 
                 SupervisorSettingsView()
                     .tabItem {
@@ -47,6 +48,9 @@ struct ContentView: View {
             .tint(.hatchGreen)
             .toolbarBackground(.visible, for: .tabBar)
             .toolbarBackground(Color.white, for: .tabBar)
+            .onAppear {
+                session.loadSupervisorNotifications()
+            }
         }
     }
 

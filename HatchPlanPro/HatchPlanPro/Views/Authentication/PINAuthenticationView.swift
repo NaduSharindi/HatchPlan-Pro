@@ -2,75 +2,50 @@
 //  PINAuthenticationView.swift
 //  HatchPlanPro
 //
-//  Created by Nadunika Sharindi on 2026-05-11.
-//
-//  Provides a 4-digit PIN entry screen with Face ID / Touch ID fallback.
-//  PINs are securely stored and verified via KeychainHelper. On first
-//  use the PIN is saved; on subsequent uses it is verified.
-//
 
 import SwiftUI
 
 struct PINAuthenticationView: View {
-    @Environment(\.presentationMode) var presentationMode
     @EnvironmentObject private var session: AppSessionViewModel
     @StateObject private var viewModel = AuthViewModel()
-    
-    // These properties make the view dynamic for both roles!
+
     let role: HatcheryRole
     let subtitle: String
-    
-    // The layout for our keypad
-    let columns: [GridItem] = [
+
+    @State private var isFirstTimePINSetup = false
+    @State private var navigateToBiometricSetup = false
+
+    private let columns: [GridItem] = [
         GridItem(.flexible()),
         GridItem(.flexible()),
         GridItem(.flexible())
     ]
-    
-    let keypadButtons = [
+
+    private let keypadButtons = [
         "1", "2", "3",
         "4", "5", "6",
         "7", "8", "9",
         "faceid", "0", "delete"
     ]
-    
+
+    private var accentColor: Color {
+        role == .manager ? .figmaPrimary : .hatchGreen
+    }
+
+    private var biometric: BiometricAuthService { BiometricAuthService.shared }
+
     var body: some View {
-        VStack(spacing: 30) {
-            // MARK: - Header
-            HStack {
-                Button(action: {
-                    presentationMode.wrappedValue.dismiss()
-                }) {
-                    Image(systemName: "chevron.left")
-                        .font(.title3)
-                        .foregroundColor(.figmaTextDark)
-                        .padding()
-                }
-                .accessibilityLabel("Go back")
-                Spacer()
-            }
-            
-            // MARK: - Icon & Titles
-            VStack(spacing: 12) {
-                Image(systemName: "lock.shield.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 60, height: 60)
-                    .foregroundColor(Color(hex: "#20B2AA"))
-                    .accessibilityHidden(true)
-                
-                Text(role.rawValue)
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .foregroundColor(.figmaTextDark)
-                    .accessibilityAddTraits(.isHeader)
-                
-                Text(viewModel.isSettingUpPIN ? "Create a 4-digit PIN" : subtitle)
-                    .font(.subheadline)
-                    .foregroundColor(.gray)
-            }
-            
-            // MARK: - PIN Indicator Dots
+        VStack(spacing: 24) {
+            AuthBackButton()
+
+            AuthHeader(
+                title: role.shortTitle,
+                subtitle: isFirstTimePINSetup ? "Create a 4-digit PIN" : subtitle,
+                accentColor: accentColor,
+                systemImage: "lock.shield.fill"
+            )
+            .padding(.top, 4)
+
             HStack(spacing: 20) {
                 ForEach(0..<4, id: \.self) { index in
                     Circle()
@@ -83,44 +58,26 @@ struct PINAuthenticationView: View {
             .padding(.vertical, 20)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("\(viewModel.pin.count) of 4 digits entered")
-            .accessibilityValue(viewModel.pin.count == 4 ? "PIN complete" : "\(4 - viewModel.pin.count) digits remaining")
-            
-            // MARK: - Error Message
+
             if viewModel.showError, let errorMsg = viewModel.errorMessage {
-                HStack(spacing: 6) {
-                    Image(systemName: "exclamationmark.circle.fill")
-                        .foregroundColor(.red)
-                    Text(errorMsg)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-                .transition(.opacity)
-                .animation(.easeInOut, value: viewModel.showError)
-                .accessibilityElement(children: .combine)
+                AuthErrorBanner(message: errorMsg)
+                    .padding(.horizontal, 24)
             }
-            
+
             Spacer()
-            
-            // MARK: - Hidden Navigation to Biometric Setup
-            NavigationLink(
-                destination: BiometricSetupView(role: role),
-                isActive: $viewModel.isAuthenticated,
-                label: { EmptyView() }
-            )
-            
-            // MARK: - Number Pad
+
             LazyVGrid(columns: columns, spacing: 20) {
                 ForEach(keypadButtons, id: \.self) { button in
-                    Button(action: {
+                    Button {
                         handleKeyPress(button)
-                    }) {
+                    } label: {
                         ZStack {
                             Circle()
                                 .fill(Color.gray.opacity(0.05))
                                 .frame(width: 75, height: 75)
-                            
+
                             if button == "faceid" {
-                                Image(systemName: BiometricAuthService.shared.biometricIconName)
+                                Image(systemName: biometric.biometricIconName)
                                     .font(.title)
                             } else if button == "delete" {
                                 Image(systemName: "delete.backward")
@@ -133,45 +90,90 @@ struct PINAuthenticationView: View {
                         }
                         .foregroundColor(.figmaTextDark)
                     }
-                    .disabled(button == "faceid" ? !BiometricAuthService.shared.isBiometricAvailable : (button == "delete" ? viewModel.pin.isEmpty : false))
-                    .accessibilityLabel(button == "faceid" ? BiometricAuthService.shared.biometricName : (button == "delete" ? "Delete" : "Digit \(button)"))
+                    .disabled(faceIDButtonDisabled(button))
+                    .accessibilityLabel(
+                        button == "faceid" ? biometric.biometricName :
+                        (button == "delete" ? "Delete" : "Digit \(button)")
+                    )
                 }
             }
             .padding(.horizontal, 40)
-            
-            // MARK: - Bottom Biometric Button
-            if BiometricAuthService.shared.isBiometricAvailable {
-                Button(action: {
-                    viewModel.authenticateWithBiometrics()
-                }) {
-                    Text("Use \(BiometricAuthService.shared.biometricName) instead")
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.figmaPrimary)
+
+            if biometric.isBiometricAvailable {
+                if biometric.isEnabled {
+                    Button(action: attemptBiometricLogin) {
+                        Text("Use \(biometric.biometricName) instead")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(accentColor)
+                            .padding(.top, 20)
+                    }
+                    .disabled(viewModel.isLoading)
+                    .accessibilityLabel("Use \(biometric.biometricName) instead of PIN")
+                } else {
+                    // Enrollment is offered only after the PIN succeeds, so biometrics
+                    // can never be used to bypass the app's own PIN gate.
+                    Text("Enter your PIN once — you can turn on \(biometric.biometricName) right after.")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
                         .padding(.top, 20)
                 }
-                .accessibilityLabel("Use \(BiometricAuthService.shared.biometricName) instead of PIN")
             }
-            
+
             Spacer()
         }
-        .background(Color.figmaBackground.ignoresSafeArea())
+        .background(AuthScreenBackground())
         .navigationBarHidden(true)
+        .navigationDestination(isPresented: $navigateToBiometricSetup) {
+            BiometricSetupView(role: role)
+        }
+        .onAppear {
+            isFirstTimePINSetup = !KeychainHelper.shared.hasPIN
+            if !isFirstTimePINSetup && biometric.isEnabled {
+                attemptBiometricLogin()
+            }
+        }
+        .onChange(of: viewModel.isAuthenticated) { _, authenticated in
+            guard authenticated else { return }
+            if isFirstTimePINSetup || session.shouldOfferBiometricEnrollment {
+                navigateToBiometricSetup = true
+            } else {
+                session.completeAuthentication(usingFaceID: false)
+            }
+        }
     }
-    
-    // Helper function to route keypad presses
+
+    private func faceIDButtonDisabled(_ button: String) -> Bool {
+        if button == "faceid" {
+            return !biometric.isBiometricAvailable || !biometric.isEnabled || viewModel.isLoading
+        }
+        if button == "delete" {
+            return viewModel.pin.isEmpty
+        }
+        return false
+    }
+
     private func handleKeyPress(_ button: String) {
         if button == "delete" {
             viewModel.deleteDigit()
         } else if button == "faceid" {
-            viewModel.authenticateWithBiometrics()
+            attemptBiometricLogin()
         } else {
             viewModel.enterDigit(button)
         }
     }
+
+    private func attemptBiometricLogin() {
+        viewModel.authenticateWithBiometrics { success in
+            if success {
+                session.completeAuthentication(usingFaceID: true, biometricAlreadyVerified: true)
+            }
+        }
+    }
 }
 
-// Preview to test it without running the app
 #Preview {
-    PINAuthenticationView(role: .supervisor, subtitle: "Enter your supervisor PIN")
+    PINAuthenticationView(role: .manager, subtitle: "Enter your manager PIN")
+        .environmentObject(AppSessionViewModel())
 }

@@ -72,6 +72,8 @@ struct HatchPlanProApp: App {
                 if hasSeenOnboarding {
                     if session.isAuthenticated {
                         ContentView()
+                    } else if session.needsBiometricUnlock {
+                        BiometricUnlockView()
                     } else {
                         LandingView()
                     }
@@ -81,7 +83,23 @@ struct HatchPlanProApp: App {
             }
             .environmentObject(session)
             .environment(\.managedObjectContext, persistenceController.container.viewContext)
-            .environment(\.dynamicTypeSize, session.preferredDynamicTypeSize)
+            .modifier(VoiceOverDynamicTypeModifier(session: session))
+            .onAppear {
+                session.refreshVoiceOverStatus()
+                session.restoreStoredSession()
+            }
+        }
+    }
+}
+
+private struct VoiceOverDynamicTypeModifier: ViewModifier {
+    @ObservedObject var session: AppSessionViewModel
+
+    func body(content: Content) -> some View {
+        if session.isVoiceOverRunning {
+            content
+        } else {
+            content.environment(\.dynamicTypeSize, session.preferredDynamicTypeSize)
         }
     }
 }

@@ -22,11 +22,22 @@ struct SupervisorHomeView: View {
                         Spacer()
                         HStack(spacing: 12) {
                             NavigationLink(destination: SupervisorNotificationsView()) {
-                                Image(systemName: "bell.fill")
-                                    .foregroundColor(.hatchGreen)
-                                    .padding(10)
-                                    .background(Circle().fill(Color.hatchGreenSoft))
+                                ZStack(alignment: .topTrailing) {
+                                    Image(systemName: "bell.fill")
+                                        .foregroundColor(.hatchGreen)
+                                        .padding(10)
+                                        .background(Circle().fill(Color.hatchGreenSoft))
+
+                                    if session.unreadSupervisorNotifCount > 0 {
+                                        Circle()
+                                            .fill(Color.hatchOrange)
+                                            .frame(width: 10, height: 10)
+                                            .offset(x: 2, y: -2)
+                                    }
+                                }
                             }
+                            .accessibilityLabel("Notifications")
+                            .accessibilityValue(session.unreadSupervisorNotifCount > 0 ? "\(session.unreadSupervisorNotifCount) unread" : "No unread notifications")
 
                             NavigationLink(destination: SupervisorProfileView()) {
                                 Image(systemName: "person.crop.circle.fill")

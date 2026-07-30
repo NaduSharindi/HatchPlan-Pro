@@ -54,8 +54,8 @@ struct ManagerAccessibilityView: View {
                 sectionLabel("INTERACTION")
 
                 VStack(spacing: 0) {
-                    toggleRow(icon: "person.wave.2.fill", iconColor: Color(hex: "#922D60"), title: "VoiceOver", isOn: Binding(get: { session.accessibilityVoiceOverEnabled }, set: { session.accessibilityVoiceOverEnabled = $0 }))
-                    Text("VoiceOver speaks items on the screen to help you navigate without seeing them.")
+                    voiceOverToggleRow
+                    Text("VoiceOver speaks items on the screen to help you navigate without seeing them. Toggle opens iOS Settings.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -63,6 +63,9 @@ struct ManagerAccessibilityView: View {
                         .padding(.bottom, 14)
                 }
                 .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Color(hex: "#F5F6F8")))
+                .onAppear {
+                    session.refreshVoiceOverStatus()
+                }
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("INDUSTRIAL PRECISION")
@@ -99,8 +102,23 @@ struct ManagerAccessibilityView: View {
             Toggle("", isOn: isOn)
                 .labelsHidden()
                 .tint(.hatchGreen)
+                .accessibilityLabel(title)
         }
         .padding(16)
+    }
+
+    private var voiceOverToggleRow: some View {
+        HStack(spacing: 12) {
+            iconBadge(icon: "person.wave.2.fill", color: Color(hex: "#922D60"))
+            Toggle(isOn: session.voiceOverToggleBinding) {
+                Text("VoiceOver")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+            }
+            .tint(.hatchGreen)
+        }
+        .padding(16)
+        .accessibilityHint("Opens iOS Settings where VoiceOver can be turned on or off")
     }
 
     private func iconBadge(icon: String, color: Color) -> some View {
@@ -128,7 +146,7 @@ struct ManagerBiometricSecurityView: View {
                     .fill(Color.white)
                     .frame(width: 92, height: 92)
                     .overlay(
-                        Image(systemName: "touchid")
+                        Image(systemName: session.biometricType.iconName)
                             .font(.system(size: 44, weight: .semibold))
                             .foregroundColor(.hatchGreen)
                     )
@@ -145,10 +163,7 @@ struct ManagerBiometricSecurityView: View {
                         .padding(.horizontal, 16)
                 }
 
-                VStack(spacing: 10) {
-                    biometricRow(icon: "faceid", title: "Enable Face ID", subtitle: "Use for app entry", tint: .hatchGreen, isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
-                    biometricRow(icon: "touchid", title: "Enable Touch ID", subtitle: "Use for app entry", tint: .gray, isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
-                }
+                BiometricSettingsSection()
 
                 VStack(alignment: .leading, spacing: 8) {
                     Text("SECURITY ADVISORY")
@@ -186,36 +201,6 @@ struct ManagerBiometricSecurityView: View {
         .toolbar(.hidden, for: .navigationBar)
     }
 
-    private func biometricRow(icon: String,
-                              title: String,
-                              subtitle: String,
-                              tint: Color,
-                              isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(tint)
-                .frame(width: 34, height: 34)
-                .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(tint.opacity(0.12)))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                Text(subtitle)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-
-            Spacer()
-
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-                .tint(.hatchGreen)
-        }
-        .padding(14)
-        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#F5F6F8")))
-    }
 }
 
 struct ManagerChangePasscodeView: View {

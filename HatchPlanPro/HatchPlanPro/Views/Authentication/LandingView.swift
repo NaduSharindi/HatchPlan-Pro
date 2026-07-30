@@ -2,8 +2,6 @@
 //  LandingView.swift
 //  HatchPlanPro
 //
-//  Created by Nadunika Sharindi on 2026-05-11.
-//
 
 import SwiftUI
 
@@ -13,45 +11,51 @@ struct LandingView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background color from Figma
-                Color.figmaBackground
-                    .ignoresSafeArea()
-                
-                VStack(spacing: 40) {
-                    
+                AuthScreenBackground()
+
+                VStack(spacing: 32) {
                     Spacer()
-                    
-                    VStack(spacing: 8) {
-                        AppLogoView(size: 88, title: "HatchPlan Pro", subtitle: "Precision poultry management")
-                        
-                        Text("Select your role to continue")
+
+                    VStack(spacing: 10) {
+                        AppLogoView(size: 96, title: "HatchPlan Pro", subtitle: "Precision poultry management")
+                        Text("Choose your role to sign in")
                             .font(.subheadline)
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                     }
-                    
-                    VStack(spacing: 20) {
-                        NavigationLink(destination: SupervisorSplashView()) {
-                            RoleSelectionButton(title: HatcheryRole.supervisor.rawValue, iconName: HatcheryRole.supervisor.displaySymbol)
+
+                    VStack(spacing: 16) {
+                        NavigationLink(destination: SupervisorOnboardingView()) {
+                            RoleSelectionButton(
+                                title: HatcheryRole.supervisor.rawValue,
+                                iconName: HatcheryRole.supervisor.displaySymbol,
+                                subtitle: "Monitor batches, scan labels, submit plans"
+                            )
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(.plain)
                         .accessibilityLabel("Hatchery Supervisor")
-                        .accessibilityHint("Opens the supervisor login flow")
+                        .accessibilityHint("View supervisor onboarding and sign in")
 
                         NavigationLink(destination: LoginView(role: .manager)) {
-                            RoleSelectionButton(title: HatcheryRole.manager.rawValue, iconName: HatcheryRole.manager.displaySymbol)
+                            RoleSelectionButton(
+                                title: HatcheryRole.manager.rawValue,
+                                iconName: HatcheryRole.manager.displaySymbol,
+                                subtitle: "Approve plans, review alerts, run reports",
+                                style: .manager
+                            )
                         }
-                        .buttonStyle(PlainButtonStyle())
+                        .buttonStyle(.plain)
                         .accessibilityLabel("Hatchery Manager")
-                        .accessibilityHint("Opens the manager login flow")
+                        .accessibilityHint("Sign in to the manager dashboard")
                     }
+                    .padding(.horizontal, 20)
 
-                    NavigationLink(destination: SignUpView(role: session.currentRole)) {
-                        Text("Create a demo account")
+                    NavigationLink(destination: SignUpView(role: .supervisor)) {
+                        Text("New here? Create an account")
                             .font(.footnote.weight(.semibold))
-                            .foregroundColor(.gray)
-                            .padding(.top, 6)
+                            .foregroundColor(.hatchGreen)
                     }
-                    
+                    .accessibilityLabel("Create account")
+
                     Spacer()
                     Spacer()
                 }
@@ -63,4 +67,5 @@ struct LandingView: View {
 
 #Preview {
     LandingView()
+        .environmentObject(AppSessionViewModel())
 }

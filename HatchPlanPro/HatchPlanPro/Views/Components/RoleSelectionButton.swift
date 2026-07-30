@@ -2,36 +2,60 @@
 //  RoleSelectionButton.swift
 //  HatchPlanPro
 //
-//  Created by Nadunika Sharindi on 2026-05-11.
-//
 
 import SwiftUI
 
 struct RoleSelectionButton: View {
+    enum Style {
+        case supervisor
+        case manager
+    }
+
     let title: String
     let iconName: String
-    
+    var subtitle: String? = nil
+    var style: Style = .supervisor
+
+    private var accentColor: Color {
+        style == .manager ? .figmaPrimary : .hatchGreen
+    }
+
     var body: some View {
         HStack(spacing: 16) {
             Image(systemName: iconName)
-                .font(.title2)
-            
-            Text(title)
-                .font(.headline)
-                .fontWeight(.semibold)
-            
+                .font(.title2.weight(.semibold))
+                .frame(width: 48, height: 48)
+                .background(Circle().fill(Color.white.opacity(0.2)))
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.headline.weight(.bold))
+                if let subtitle {
+                    Text(subtitle)
+                        .font(.caption)
+                        .opacity(0.9)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+
             Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.subheadline)
+
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.title2)
         }
-        .padding()
+        .padding(18)
         .frame(maxWidth: .infinity)
-        // Note: If figmaPrimary is broken, change this to Color.orange temporarily
-        .background(Color.figmaPrimary)
         .foregroundColor(.white)
-        .cornerRadius(12)
-        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: 2)
-        .padding(.horizontal)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [accentColor, accentColor.opacity(0.85)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .shadow(color: accentColor.opacity(0.25), radius: 12, x: 0, y: 6)
     }
 }

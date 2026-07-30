@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import UIKit
 import FirebaseAuth
 
 final class AppSessionViewModel: ObservableObject {
@@ -24,6 +25,7 @@ final class AppSessionViewModel: ObservableObject {
     @Published var lastSyncSummary = "Local draft"
     @Published var selectedTabIndex = 0
     @Published var supervisorNotifications: [HatcheryNotification] = []
+    @Published var unreadSupervisorNotifCount: Int = 0
     @Published var batchInsights: [BatchInsight] = []
     @Published var hatchPlans: [HatchPlanRecord] = []
     @Published var scheduledBatches: [ScheduledBatch] = []
@@ -31,8 +33,10 @@ final class AppSessionViewModel: ObservableObject {
     @Published var hatchDetailSnapshots: [String: HatchDetailSnapshot] = [:]
     @Published var scannedBatches: [ScannedBatch] = []
     @Published var accessibilityTextScale: Double = 1.0
-    @Published var accessibilityVoiceOverEnabled: Bool = false
+    @Published private(set) var isVoiceOverRunning = UIAccessibility.isVoiceOverRunning
     @Published var biometricsEnabled: Bool = BiometricAuthService.shared.isEnabled
+    @Published var isUpdatingBiometrics = false
+    @Published var biometricErrorMessage: String?
 
     // MARK: - Auth & Backend State
     @Published var isLoadingAuth: Bool = false
@@ -45,6 +49,7 @@ final class AppSessionViewModel: ObservableObject {
     private let authService = FirebaseAuthService.shared
     private let biometricService = BiometricAuthService.shared
     private var authStateHandle: AuthStateDidChangeListenerHandle?
+    private var voiceOverObserver: NSObjectProtocol?
 
     var preferredDynamicTypeSize: DynamicTypeSize {
         switch accessibilityTextScale {
@@ -320,13 +325,152 @@ final class AppSessionViewModel: ObservableObject {
         accessibilityTextScale = min(max(scale, 0.85), 1.45)
     }
 
-    func setBiometricEnabled(_ enabled: Bool) {
-        biometricsEnabled = enabled
-        if enabled {
-            biometricService.enableBiometric()
-        } else {
+    func refreshVoiceOverStatus() {
+        isVoiceOverRunning = UIAccessibility.isVoiceOverRunning
+    }
+
+    func openAccessibilitySettings() {
+        openSystemSettings()
+    }
+
+    var voiceOverToggleBinding: Binding<Bool> {
+        Binding(
+            get: { self.isVoiceOverRunning },
+            set: { _ in self.openAccessibilitySettings() }
+        )
+    }
+
+    // MARK: - Biometrics
+
+    var biometricType: BiometricType { biometricService.biometricType }
+
+    var biometricAvailability: BiometricAvailability { biometricService.availability }
+
+    var biometricName: String { biometricService.biometricName }
+
+    /// True when this device can actually run a biometric prompt right now.
+    var canEnableBiometrics: Bool { biometricService.isBiometricAvailable }
+
+    /// Whether the user should be invited to turn biometrics on after signing in.
+    /// Respects an earlier "Skip for now" so the prompt never becomes a nag.
+    var shouldOfferBiometricEnrollment: Bool {
+        biometricService.isBiometricAvailable
+        && !biometricService.isEnabled
+        && !hasDeclinedBiometricSetup
+    }
+
+    var hasDeclinedBiometricSetup: Bool {
+        UserDefaults.standard.bool(forKey: Self.biometricSetupDeclinedKey)
+    }
+
+    func markBiometricSetupDeclined() {
+        UserDefaults.standard.set(true, forKey: Self.biometricSetupDeclinedKey)
+    }
+
+    private static let biometricSetupDeclinedKey = "hatchplan.biometricSetupDeclined"
+
+    /// Keeps the published flag in step with the Keychain, which is the source of truth.
+    func refreshBiometricState() {
+        biometricsEnabled = biometricService.isEnabled
+    }
+
+    func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    /// Turns biometric sign-in on or off.
+    ///
+    /// Enabling always runs the real system prompt first, so the stored preference
+    /// can never claim biometrics work when the user never verified.
+    func setBiometricEnabled(_ enabled: Bool, completion: ((Bool) -> Void)? = nil) {
+        biometricErrorMessage = nil
+
+        guard enabled else {
             biometricService.disableBiometric()
+            biometricsEnabled = false
+            completion?(true)
+            return
         }
+
+        guard biometricService.isBiometricAvailable else {
+            biometricsEnabled = false
+            biometricErrorMessage = biometricService.unavailableReason
+            completion?(false)
+            return
+        }
+
+        isUpdatingBiometrics = true
+
+        biometricService.enableBiometricWithAuthentication { [weak self] result in
+            guard let self else { return }
+            self.isUpdatingBiometrics = false
+
+            switch result {
+            case .success:
+                self.biometricsEnabled = true
+                UserDefaults.standard.set(false, forKey: Self.biometricSetupDeclinedKey)
+                self.preferredSecurityMethod = self.biometricService.biometricName
+                self.currentUser = HatcheryUserProfile(
+                    fullName: self.currentUser.fullName,
+                    email: self.currentUser.email,
+                    role: self.currentRole,
+                    preferredSecurity: self.biometricService.biometricName
+                )
+                completion?(true)
+
+            case .failure(let error):
+                self.biometricsEnabled = false
+                self.biometricErrorMessage = self.biometricService.localizedErrorMessage(from: error)
+                completion?(false)
+            }
+        }
+    }
+
+    var needsBiometricUnlock: Bool {
+        !isAuthenticated && authService.isSignedIn && biometricService.isEnabled
+    }
+
+    func restoreStoredSession() {
+        guard let email = KeychainHelper.shared.read(forKey: KeychainHelper.userEmailKey),
+              let name = KeychainHelper.shared.read(forKey: KeychainHelper.userNameKey),
+              let roleRaw = KeychainHelper.shared.read(forKey: KeychainHelper.userRoleKey),
+              let role = HatcheryRole(rawValue: roleRaw) else {
+            return
+        }
+
+        currentRole = role
+        currentUser = HatcheryUserProfile(
+            fullName: name,
+            email: email,
+            role: role,
+            preferredSecurity: biometricService.isEnabled ? biometricService.biometricName : preferredSecurityMethod
+        )
+        biometricsEnabled = biometricService.isEnabled
+    }
+
+    func attemptBiometricUnlock(completion: @escaping (Bool, Error?) -> Void) {
+        guard needsBiometricUnlock else {
+            completion(false, nil)
+            return
+        }
+
+        restoreStoredSession()
+
+        biometricService.authenticate(reason: "Unlock HatchPlan Pro with \(biometricService.biometricName).") { [weak self] result in
+            guard let self else { return }
+            switch result {
+            case .success:
+                self.completeAuthentication(usingFaceID: true, biometricAlreadyVerified: true)
+                completion(true, nil)
+            case .failure(let error):
+                completion(false, error)
+            }
+        }
+    }
+
+    var canUseBiometricSignIn: Bool {
+        authService.isSignedIn && biometricService.isEnabled && biometricService.isBiometricAvailable
     }
 
     func recordCredentials(email: String, name: String? = nil) {
@@ -426,8 +570,160 @@ final class AppSessionViewModel: ObservableObject {
     }
 
     private func appendSupervisorNotification(type: NotificationType, title: String, message: String) {
-        let notification = HatcheryNotification(type: type, title: title, message: message, timestamp: Date(), timeLabel: "Just now")
+        let notification = HatcheryNotification(
+            type: type,
+            title: title,
+            message: message,
+            timestamp: Date(),
+            timeLabel: "Just now"
+        )
         supervisorNotifications.insert(notification, at: 0)
+        updateSupervisorUnreadCount()
+
+        cacheSupervisorNotification(notification)
+        persistSupervisorNotifications(supervisorNotifications)
+        deliverSupervisorPushNotification(type: type, title: title, body: message, identifier: notification.id)
+    }
+
+    func loadSupervisorNotifications(completion: (() -> Void)? = nil) {
+        syncService.fetchSupervisorNotifications { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self else {
+                    completion?()
+                    return
+                }
+
+                switch result {
+                case .success(let notifications):
+                    if notifications.isEmpty {
+                        self.restoreSupervisorNotificationsFromCacheOrSeed()
+                    } else {
+                        self.supervisorNotifications = notifications
+                        self.cacheSupervisorNotifications(notifications)
+                    }
+                case .failure(let error):
+                    print("Failed to fetch supervisor notifications: \(error.localizedDescription)")
+                    self.restoreSupervisorNotificationsFromCacheOrSeed()
+                }
+
+                self.updateSupervisorUnreadCount()
+                completion?()
+            }
+        }
+    }
+
+    private func restoreSupervisorNotificationsFromCacheOrSeed() {
+        let cached = supervisorNotificationsFromCache()
+        if !cached.isEmpty {
+            supervisorNotifications = cached
+            return
+        }
+        seedSupervisorNotifications()
+    }
+
+    private func seedSupervisorNotifications() {
+        let samples = defaultSupervisorNotifications
+        supervisorNotifications = samples
+        cacheSupervisorNotifications(samples)
+        syncService.syncSupervisorNotifications(notifications: samples) { _ in }
+    }
+
+    private var defaultSupervisorNotifications: [HatcheryNotification] {
+        [
+            HatcheryNotification(
+                type: .criticalAlert,
+                title: "Batch #B1024 is 24 hours from hatching. Resource allocation required.",
+                message: "Critical resource needed",
+                timestamp: Date().addingTimeInterval(-120),
+                timeLabel: "2m ago"
+            ),
+            HatcheryNotification(
+                type: .approvalUpdate,
+                title: "Plan for Batch #B1030 has been Approved by Manager Aruni.",
+                message: "Batch approved",
+                timestamp: Date().addingTimeInterval(-3600),
+                timeLabel: "1h ago"
+            ),
+            HatcheryNotification(
+                type: .systemMessage,
+                title: "Weekly hatchery report is ready for review.",
+                message: "Report available",
+                timestamp: Date().addingTimeInterval(-7200),
+                timeLabel: "2h ago"
+            )
+        ]
+    }
+
+    private func cacheSupervisorNotification(_ notification: HatcheryNotification) {
+        CoreDataManager.shared.saveNotification(
+            id: notification.id,
+            type: notification.type.rawValue,
+            title: notification.title,
+            message: notification.message,
+            timestamp: notification.timestamp,
+            timeLabel: notification.timeLabel,
+            isRead: false,
+            role: "supervisor"
+        )
+    }
+
+    private func cacheSupervisorNotifications(_ notifications: [HatcheryNotification]) {
+        notifications.forEach { cacheSupervisorNotification($0) }
+    }
+
+    private func supervisorNotificationsFromCache() -> [HatcheryNotification] {
+        CoreDataManager.shared.fetchNotifications(forRole: "supervisor").compactMap { stored in
+            guard let typeRaw = stored.type,
+                  let type = NotificationType(rawValue: typeRaw),
+                  let title = stored.title,
+                  let message = stored.message,
+                  let timestamp = stored.timestamp,
+                  let timeLabel = stored.timeLabel else {
+                return nil
+            }
+
+            return HatcheryNotification(
+                type: type,
+                title: title,
+                message: message,
+                timestamp: timestamp,
+                timeLabel: timeLabel
+            )
+        }
+    }
+
+    private func persistSupervisorNotifications(_ notifications: [HatcheryNotification]) {
+        syncService.syncSupervisorNotifications(notifications: notifications) { result in
+            if case .failure(let error) = result {
+                print("Failed to sync supervisor notifications: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func deliverSupervisorPushNotification(
+        type: NotificationType,
+        title: String,
+        body: String,
+        identifier: String
+    ) {
+        guard supervisorPushNotificationsEnabled else { return }
+
+        PushNotificationService.shared.scheduleLocalNotification(
+            title: type.displayName,
+            body: body.isEmpty ? title : body,
+            identifier: identifier
+        )
+    }
+
+    private var supervisorPushNotificationsEnabled: Bool {
+        if UserDefaults.standard.object(forKey: "notificationsEnabled") == nil {
+            return true
+        }
+        return UserDefaults.standard.bool(forKey: "notificationsEnabled")
+    }
+
+    private func updateSupervisorUnreadCount() {
+        unreadSupervisorNotifCount = CoreDataManager.shared.unreadNotificationCount(forRole: "supervisor")
     }
 
     private func appendManagerNotification(type: NotificationType, title: String, message: String) {
@@ -453,6 +749,12 @@ final class AppSessionViewModel: ObservableObject {
                 CoreDataManager.shared.saveUserProfile(
                     uid: user.uid, email: email,
                     fullName: user.displayName ?? self.currentUser.fullName,
+                    role: self.currentRole.rawValue
+                )
+                KeychainHelper.shared.saveUserSession(
+                    uid: user.uid,
+                    email: email,
+                    name: user.displayName ?? self.currentUser.fullName,
                     role: self.currentRole.rawValue
                 )
                 completion(true)
@@ -495,32 +797,60 @@ final class AppSessionViewModel: ObservableObject {
 
     // MARK: - Complete Authentication (Biometric / PIN)
 
-    func completeAuthentication(usingFaceID: Bool) {
-        preferredSecurityMethod = usingFaceID ? "Face ID" : "PIN"
+    func completeAuthentication(usingFaceID: Bool, biometricAlreadyVerified: Bool = false) {
+        preferredSecurityMethod = usingFaceID ? biometricService.biometricName : "PIN"
         currentUser = HatcheryUserProfile(
             fullName: currentUser.fullName,
             email: currentUser.email,
             role: currentRole,
-            preferredSecurity: usingFaceID ? "Face ID" : "PIN"
+            preferredSecurity: preferredSecurityMethod
         )
 
         if usingFaceID {
-            biometricService.enableBiometric()
-            // Actually trigger Face ID / Touch ID
-            biometricService.authenticate(reason: "Verify your identity to access HatchPlan Pro.") { [weak self] result in
-                switch result {
-                case .success:
-                    self?.isAuthenticated = true
-                    // Register for push notifications after auth
-                    PushNotificationService.shared.requestAuthorization { _ in }
-                case .failure:
-                    // Still allow access if biometric fails (fallback to PIN)
-                    self?.isAuthenticated = true
+            if biometricAlreadyVerified {
+                biometricService.enableBiometric()
+                biometricsEnabled = true
+                finishAuthentication()
+            } else {
+                biometricService.enableBiometricWithAuthentication(
+                    reason: "Verify your identity to access HatchPlan Pro."
+                ) { [weak self] result in
+                    DispatchQueue.main.async {
+                        guard let self else { return }
+                        switch result {
+                        case .success:
+                            self.biometricsEnabled = true
+                            self.finishAuthentication()
+                        case .failure(let error):
+                            // A declined biometric prompt must not lock the user out of a
+                            // session they already authenticated for; fall back to PIN.
+                            self.biometricsEnabled = false
+                            self.preferredSecurityMethod = "PIN"
+                            self.biometricErrorMessage = self.biometricService.localizedErrorMessage(from: error)
+                            self.authErrorMessage = self.biometricErrorMessage
+                            self.showAuthError = true
+                            self.finishAuthentication()
+                        }
+                    }
                 }
             }
         } else {
-            isAuthenticated = true
-            PushNotificationService.shared.requestAuthorization { _ in }
+            finishAuthentication()
+        }
+    }
+
+    private func finishAuthentication() {
+        isAuthenticated = true
+        PushNotificationService.shared.requestAuthorization { _ in }
+        refreshRoleNotifications()
+    }
+
+    private func refreshRoleNotifications() {
+        switch currentRole {
+        case .supervisor:
+            loadSupervisorNotifications()
+        case .manager:
+            fetchManagerNotifications()
         }
     }
 
@@ -533,6 +863,11 @@ final class AppSessionViewModel: ObservableObject {
         selectedTabIndex = 0
         authErrorMessage = nil
         showAuthError = false
+        biometricErrorMessage = nil
+        isUpdatingBiometrics = false
+        biometricsEnabled = biometricService.isEnabled
+        // A new sign-in should get the offer again, even if the last user skipped it.
+        UserDefaults.standard.set(false, forKey: Self.biometricSetupDeclinedKey)
     }
 
     func syncCurrentState(completion: @escaping (String) -> Void) {
@@ -551,16 +886,7 @@ final class AppSessionViewModel: ObservableObject {
     }
 
     func fetchSupervisorNotifications() {
-        syncService.fetchSupervisorNotifications { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let notifications):
-                    self.supervisorNotifications = notifications
-                case .failure(let error):
-                    print("Failed to fetch notifications: \(error.localizedDescription)")
-                }
-            }
-        }
+        loadSupervisorNotifications()
     }
 
     func fetchBatchInsights() {
@@ -577,45 +903,9 @@ final class AppSessionViewModel: ObservableObject {
     }
 
     func syncSupervisorData() {
-        // Create sample notifications and insights for supervisor
-        let sampleNotifications: [HatcheryNotification] = [
-            HatcheryNotification(type: .criticalAlert, title: "Batch #B1024 is 24 hours from hatching. Resource allocation required.", message: "Critical resource needed", timestamp: Date().addingTimeInterval(-120), timeLabel: "2m ago"),
-            HatcheryNotification(type: .approvalUpdate, title: "Plan for Batch #B1030 has been Approved by Manager Aruni.", message: "Batch approved", timestamp: Date().addingTimeInterval(-3600), timeLabel: "1h ago")
-        ]
-
-        syncService.syncSupervisorNotifications(notifications: sampleNotifications) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    self.supervisorNotifications = sampleNotifications
-                case .failure(let error):
-                    print("Failed to sync notifications: \(error.localizedDescription)")
-                }
-            }
-        }
-
-        // Create sample batch insights
-        let sampleInsights: [BatchInsight] = [
-            BatchInsight(batchID: "#B1024", breed: "Ross 308", date: "Oct 24, 2023", status: .approvedReady, hatchRate: nil),
-            BatchInsight(batchID: "#B1029", breed: "Ross 708", date: "Oct 24, 2023", status: .pendingReview, hatchRate: nil),
-            BatchInsight(batchID: "#B2023-10-A", breed: "Cobb 500", date: "Oct 28, 2023", status: .synced, hatchRate: "94.5%")
-        ]
-
-        syncService.syncBatchInsights(insights: sampleInsights) { result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success:
-                    self.batchInsights = sampleInsights
-                case .failure(let error):
-                    print("Failed to sync batch insights: \(error.localizedDescription)")
-                }
-            }
-        }
-
-        // Sync schedule data
+        seedSupervisorNotifications()
+        fetchBatchInsights()
         syncScheduleData()
-
-        // Sync hatch detail data
         syncHatchDetails()
     }
 
@@ -823,6 +1113,15 @@ final class AppSessionViewModel: ObservableObject {
         initializeScheduledBatches()
         initializeHatchDetails()
         bootstrapPlanStateIfNeeded()
+        refreshVoiceOverStatus()
+
+        voiceOverObserver = NotificationCenter.default.addObserver(
+            forName: UIAccessibility.voiceOverStatusDidChangeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.refreshVoiceOverStatus()
+        }
 
         // Listen for Firebase Auth state changes
         authStateHandle = authService.addAuthStateListener { [weak self] user in
@@ -845,6 +1144,9 @@ final class AppSessionViewModel: ObservableObject {
     deinit {
         if let handle = authStateHandle {
             authService.removeAuthStateListener(handle)
+        }
+        if let observer = voiceOverObserver {
+            NotificationCenter.default.removeObserver(observer)
         }
     }
 

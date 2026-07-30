@@ -142,7 +142,9 @@ struct SupervisorSettingsView: View {
             Spacer()
 
             Toggle("", isOn: enabled)
+                .labelsHidden()
                 .tint(.hatchGreen)
+                .accessibilityLabel(title)
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
@@ -214,12 +216,12 @@ struct SupervisorAccessibilityView: View {
                                     .padding(8)
                                     .background(Circle().fill(Color.hatchGreenSoft))
 
-                                Text("High Contrast Mode")
-                                    .font(.body)
-                                    .foregroundColor(.hatchGreen)
-                                Spacer()
-                                Toggle("", isOn: $highContrastEnabled)
-                                    .tint(.hatchGreen)
+                                Toggle(isOn: $highContrastEnabled) {
+                                    Text("High Contrast Mode")
+                                        .font(.body)
+                                        .foregroundColor(.hatchGreen)
+                                }
+                                .tint(.hatchGreen)
                             }
                             .padding()
                             .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
@@ -237,6 +239,8 @@ struct SupervisorAccessibilityView: View {
                                         .foregroundColor(.secondary)
                                     Slider(value: Binding(get: { session.accessibilityTextScale }, set: { session.setAccessibilityTextScale($0) }), in: 0.85...1.45)
                                         .tint(.hatchGreen)
+                                        .accessibilityLabel("Text Size")
+                                        .accessibilityValue("\(Int(session.accessibilityTextScale * 100)) percent")
                                     Text("T")
                                         .font(.title2)
                                         .foregroundColor(.secondary)
@@ -263,24 +267,24 @@ struct SupervisorAccessibilityView: View {
                             .kerning(1)
                             .foregroundColor(.secondary)
 
-                        HStack {
-                            Image(systemName: "mic.fill")
-                                .font(.title3)
-                                .foregroundColor(.hatchGreen)
-                                .padding(8)
-                                .background(Circle().fill(Color.hatchGreenSoft))
-
-                            Text("VoiceOver")
+                        Toggle(isOn: session.voiceOverToggleBinding) {
+                            Label("VoiceOver", systemImage: "mic.fill")
                                 .font(.body)
                                 .foregroundColor(.hatchGreen)
-                            Spacer()
-                            Toggle("", isOn: Binding(get: { session.accessibilityVoiceOverEnabled }, set: { session.accessibilityVoiceOverEnabled = $0 }))
-                                .tint(.hatchGreen)
                         }
+                        .tint(.hatchGreen)
                         .padding()
                         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
+                        .accessibilityHint("Opens iOS Settings where VoiceOver can be turned on or off")
+
+                        Text("VoiceOver speaks items on the screen to help you navigate without seeing them. Toggle opens iOS Settings.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                     }
                     .padding(.horizontal, 16)
+                    .onAppear {
+                        session.refreshVoiceOverStatus()
+                    }
 
                     // MARK: - Feature Card
                     VStack(spacing: 12) {
@@ -324,7 +328,7 @@ struct SupervisorBiometricSettingsView: View {
                     VStack(spacing: 16) {
                         ZStack {
                             Circle().fill(Color.hatchGreenSoft).frame(width: 100, height: 100)
-                            Image(systemName: "faceid")
+                            Image(systemName: session.biometricType.iconName)
                                 .font(.system(size: 44, weight: .semibold))
                                 .foregroundColor(.hatchGreen)
                         }
@@ -346,52 +350,8 @@ struct SupervisorBiometricSettingsView: View {
                     .padding(.horizontal, 16)
 
                     // MARK: - Toggle Options
-                    VStack(spacing: 12) {
-                        HStack {
-                            Image(systemName: "faceid")
-                                .font(.title3)
-                                .foregroundColor(.hatchGreen)
-                                .padding(8)
-                                .background(Circle().fill(Color.hatchGreenSoft))
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Enable Face ID")
-                                    .font(.body)
-                                    .foregroundColor(.hatchGreen)
-                                Text("Use for app entry")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Toggle("", isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
-                                .tint(.hatchGreen)
-                        }
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
-
-                        HStack {
-                            Image(systemName: "touchid")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                                .padding(8)
-                                .background(Circle().fill(Color(hex: "#E5E5E5")))
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Enable Touch ID")
-                                    .font(.body)
-                                    .foregroundColor(.secondary)
-                                Text("Use for app entry")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Toggle("", isOn: Binding(get: { session.biometricsEnabled }, set: { session.setBiometricEnabled($0) }))
-                                .tint(.secondary)
-                        }
-                        .padding()
-                        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(hex: "#FAFAFA")))
-                    }
-                    .padding(.horizontal, 16)
+                    BiometricSettingsSection()
+                        .padding(.horizontal, 16)
 
                     // MARK: - Security Advisory
                     VStack(alignment: .leading, spacing: 8) {
